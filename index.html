@@ -236,15 +236,15 @@ const db = firebase.database();
       <label class="form-label" style="margin-bottom:6px;">Tipo de atención</label>
       <select class="form-input" id="modal-tipo-atencion" style="height:40px;">
         <option value="">Seleccionar...</option>
-        <option>Consulta</option>
-        <option>Valoración</option>
-        <option>Incapacidad</option>
         <option>Accidente laboral</option>
-        <option>Riesgo laboral</option>
         <option>Certificado</option>
-        <option>Referencia</option>
-        <option>Seguimiento</option>
+        <option>Consulta</option>
+        <option>Incapacidad</option>
         <option>Otro</option>
+        <option>Referencia</option>
+        <option>Riesgo laboral</option>
+        <option>Seguimiento</option>
+        <option>Valoración</option>
       </select>
     </div>
     <label class="form-label" style="margin-bottom:6px;">Descripción / Diagnóstico</label>
@@ -283,7 +283,7 @@ const db = firebase.database();
         <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" type="tel" id="mu-phone" placeholder="8888-0000"></div>
       </div>
       <div class="form-row"><label class="form-label">Departamento</label>
-        <select class="form-input" id="mu-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Planta</option><option>Fincas</option><option>Operaciones</option><option>Recursos Humanos</option><option>Finanzas</option><option>TI</option><option>Ventas</option><option>Producción</option><option>Exportaciones</option></select>
+        <select class="form-input" id="mu-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Exportaciones</option><option>Finanzas</option><option>Fincas</option><option>Operaciones</option><option>Planta</option><option>Producción</option><option>Recursos Humanos</option><option>TI</option><option>Ventas</option></select>
       </div>
     </div>
     <div id="mu-doc-fields" style="display:none;">
@@ -341,7 +341,7 @@ const db = firebase.database();
     <p class="auth-title">Crear cuenta — Empleado</p><p class="auth-sub">Complete sus datos para registrarse</p>
     <div class="form-row"><label class="form-label">Nombre completo</label><input class="form-input" type="text" id="re-name" placeholder="Ej. Juan Pérez"></div>
     <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" type="text" id="re-cedula" placeholder="Ej. 3-0456-0123"></div>
-    <div class="form-row"><label class="form-label">Departamento</label><select class="form-input" id="re-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Planta</option><option>Fincas</option><option>Operaciones</option><option>Recursos Humanos</option><option>Finanzas</option><option>TI</option><option>Ventas</option><option>Producción</option><option>Exportaciones</option></select></div>
+    <div class="form-row"><label class="form-label">Departamento</label><select class="form-input" id="re-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Exportaciones</option><option>Finanzas</option><option>Fincas</option><option>Operaciones</option><option>Planta</option><option>Producción</option><option>Recursos Humanos</option><option>TI</option><option>Ventas</option></select></div>
     <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" type="tel" id="re-phone" placeholder="Ej. 8888-0000"></div>
     <div class="form-row"><label class="form-label">Usuario</label><input class="form-input" type="text" id="re-user" placeholder="Ej. jperez"></div>
     <div class="form-row"><label class="form-label">Contraseña</label><div class="pass-wrap"><input class="form-input" type="password" id="re-pass" placeholder="Mínimo 6 caracteres"><button class="toggle-pass" onclick="toggleVis('re-pass','eye2')" type="button"><i class="ti ti-eye" id="eye2"></i></button></div></div>
@@ -411,7 +411,7 @@ const db = firebase.database();
         <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" id="f-phone" readonly></div>
       </div>
       <div class="form-row"><label class="form-label">Motivo de consulta</label>
-        <select class="form-input" id="f-reason"><option value="">Seleccionar...</option><option>Control general / Chequeo</option><option>Certificado médico</option><option>Incapacidad</option><option>Accidente laboral</option><option>Seguimiento de tratamiento</option><option>Salud mental / Estrés</option><option>Otro</option></select>
+        <select class="form-input" id="f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Incapacidad</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select>
       </div>
       <div class="form-row"><label class="form-label">Notas adicionales (opcional)</label><textarea class="form-input" id="f-notes" placeholder="Describa brevemente su situación..."></textarea></div>
       <div class="form-row"><label class="form-label">Seleccionar fecha</label><input class="form-input" type="date" id="f-date"></div>
@@ -488,7 +488,7 @@ const db = firebase.database();
           <div class="form-row"><label class="form-label">Departamento</label><input class="form-input" id="adm-f-dept" readonly></div>
           <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" id="adm-f-phone" readonly></div>
         </div>
-        <div class="form-row"><label class="form-label">Motivo</label><select class="form-input" id="adm-f-reason"><option value="">Seleccionar...</option><option>Control general / Chequeo</option><option>Certificado médico</option><option>Incapacidad</option><option>Accidente laboral</option><option>Seguimiento de tratamiento</option><option>Salud mental / Estrés</option><option>Otro</option></select></div>
+        <div class="form-row"><label class="form-label">Motivo</label><select class="form-input" id="adm-f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Incapacidad</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select></div>
         <div class="form-row"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="adm-f-notes" placeholder="Describa brevemente..."></textarea></div>
         <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="adm-f-date"></div>
         <div class="form-row"><label class="form-label">Hora disponible</label><p id="adm-slots-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p><div class="slots-grid" id="adm-slots-grid"></div></div>
