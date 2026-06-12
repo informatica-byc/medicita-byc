@@ -905,8 +905,8 @@ function renderAdminResumen(){
   const upcoming=getAppts().filter(a=>a.date&&a.date>=todayStr()&&(a.status==='pending'||a.status==='next')).slice(0,5);
   const c=document.getElementById('adm-upcoming-container');
   if(!upcoming.length){c.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>No hay citas próximas</div>`;return;}
-  let html=`<div class="agenda-head"><span>Hora</span><span>Paciente</span><span>Motivo</span><span>Fecha</span></div>`;
-  upcoming.forEach(a=>{html+=`<div class="appt-row"><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}</p></div><div class="appt-reason" style="font-size:12px;color:var(--text-secondary);padding-top:2px;">${a.reason}</div><div style="font-size:12px;color:var(--text-secondary);padding-top:2px;">${formatDate(a.date)}</div></div>`;});
+  let html=`<div class="agenda-head" style="grid-template-columns:130px 80px 200px 1fr;"><span>Fecha</span><span>Hora</span><span>Paciente</span><span>Motivo</span></div>`;
+  upcoming.forEach(a=>{html+=`<div class="appt-row" style="grid-template-columns:130px 80px 200px 1fr;"><div style="font-size:13px;font-weight:600;padding-top:2px;">${formatDate(a.date)}</div><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}</p></div><div class="appt-reason" style="font-size:12px;color:var(--text-secondary);padding-top:2px;">${a.reason}</div></div>`;});
   c.innerHTML=html;
 }
 function changeAdmDay(d){admDay+=d;renderAdmAgenda();}
@@ -964,7 +964,7 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
   const container=document.getElementById(containerId);
   if(!dayAppts.length){container.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>Sin citas para este día</div>`;return;}
   const nowMin=new Date().getHours()*60+new Date().getMinutes();
-  let html=`<div class="agenda-head"><span>Hora</span><span>Paciente</span><span>Motivo</span><span>Estado</span></div>`;
+  let html=`<div class="agenda-head" style="grid-template-columns:120px 70px 180px 1fr 200px;"><span>Fecha</span><span>Hora</span><span>Paciente</span><span>Motivo</span><span>Estado</span></div>`;
   dayAppts.forEach((a,i)=>{
     const apptMin=parseInt(a.time.split(':')[0])*60+parseInt(a.time.split(':')[1]);
     const isNext=dayOffset===0&&(a.status==='next'||(a.status==='pending'&&apptMin>=nowMin&&i===dayAppts.findIndex(x=>(x.status==='pending'||x.status==='next')&&(parseInt(x.time.split(':')[0])*60+parseInt(x.time.split(':')[1]))>=nowMin)));
@@ -973,7 +973,7 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
     else if(a.status==='absent'){st=`<div class="appt-status"><span class="badge badge-absent"><i class="ti ti-x" style="font-size:11px;"></i> Ausente</span></div>`;}
     else if(a.status==='cancelled'){st=`<div class="appt-status"><span class="badge badge-cancelled"><i class="ti ti-ban" style="font-size:11px;"></i> Cancelada</span></div>`;}
     else{const badge=isNext?`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`:`<span class="badge badge-pending">Pendiente</span>`;st=`<div class="appt-status">${badge}<div class="actions"><button class="btn-action done" onclick="openAtentionModal('${a.id}')">✓ Atendido</button><button class="btn-action absent" onclick="setStatus('${a.id}','absent')">✗ Ausente</button><button class="btn-action absent" onclick="cancelarCita('${a.id}')" title="Cancelar cita"><i class="ti ti-ban" style="font-size:11px;"></i></button></div></div>`;}
-    html+=`<div class="appt-row" style="${a.status==='cancelled'?'opacity:0.6;':''}"><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div>${st}</div>`;
+    html+=`<div class="appt-row" style="grid-template-columns:120px 70px 180px 1fr 200px;${a.status==='cancelled'?'opacity:0.6;':''}"><div style="font-size:13px;font-weight:600;padding-top:2px;">${formatDate(a.date)}</div><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div>${st}</div>`;
   });
   container.innerHTML=html;
 }
