@@ -157,6 +157,8 @@ const db = firebase.database();
   .badge-pending{background:#FAEEDA;color:#854F0B;}
   .badge-done{background:#EAF3DE;color:#3B6D11;}
   .badge-absent{background:#FCEBEB;color:#A32D2D;}
+  .badge-cancelled{background:#EDEDED;color:#666;}
+  @media (prefers-color-scheme:dark){.badge-cancelled{background:#333;color:#aaa;}}
   .badge-next{background:#E1F5EE;color:#0F6E56;border:0.5px solid #5DCAA5;}
   .actions{display:flex;gap:6px;}
   .btn-action{height:28px;padding:0 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;}
@@ -191,6 +193,7 @@ const db = firebase.database();
   .role-pill.adm{background:var(--purple-light);color:var(--purple);}
   .role-pill.sec{background:var(--orange-light);color:var(--orange);}
   .admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+  @media(min-width:900px){.admin-stats{grid-template-columns:repeat(4,1fr);}}
   @media(max-width:600px){.admin-stats{grid-template-columns:repeat(2,1fr);}}
   .admin-stat{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;}
   .admin-stat-icon{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
@@ -825,15 +828,21 @@ function renderEmpCitas(){
     else if(a.status==='pending'||a.status==='next'){estado='Cita asignada';color='background:#E1F5EE;color:#0F6E56;';}
     else if(a.status==='done'){estado='Atendida';color='background:#EAF3DE;color:#3B6D11;';}
     else if(a.status==='absent'){estado='Ausente';color='background:#FCEBEB;color:#A32D2D;';}
+    else if(a.status==='cancelled'){estado='Cancelada';color='background:#EDEDED;color:#666;';}
     const fechaHora=a.date?`${formatDate(a.date)} a las ${to12h(a.time)}`:'<em style="color:var(--text-tertiary);">Pendiente de asignar</em>';
-    html+=`<div style="border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px;background:var(--bg-primary);">
+    // El empleado puede cancelar solicitudes y citas pendientes (no atendidas/ausentes/canceladas)
+    const puedeCancelar=(a.status==='solicitud'||a.status==='pending'||a.status==='next');
+    html+=`<div style="border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px;background:var(--bg-primary);${a.status==='cancelled'?'opacity:0.65;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <div>
           <p style="font-size:14px;font-weight:600;">${a.reason}</p>
           <p style="font-size:13px;color:var(--text-secondary);margin-top:3px;"><i class="ti ti-calendar" style="font-size:13px;vertical-align:-1px;"></i> ${fechaHora}</p>
           ${a.notes?`<p style="font-size:12px;color:var(--text-tertiary);margin-top:3px;">${a.notes}</p>`:''}
         </div>
-        <span style="font-size:11px;font-weight:600;padding:5px 11px;border-radius:99px;white-space:nowrap;${color}">${estado}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+          <span style="font-size:11px;font-weight:600;padding:5px 11px;border-radius:99px;white-space:nowrap;${color}">${estado}</span>
+          ${puedeCancelar?`<button class="btn-action absent" onclick="cancelarCita('${a.id}')"><i class="ti ti-ban" style="font-size:11px;"></i> Cancelar cita</button>`:''}
+        </div>
       </div>
     </div>`;
   });
@@ -843,7 +852,7 @@ function renderEmpCitas(){
 // MÉDICO
 function changeDocDay(d){docDay+=d;renderDocAgenda();}
 function renderDocAgenda(){
-  const dateStr=todayStr(docDay),dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud');
+  const dateStr=todayStr(docDay),dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud'&&a.status!=='cancelled');
   document.getElementById('doc-date-label').textContent=formatDateLong(dateStr);
   document.getElementById('doc-nav-label').textContent=docDay===0?'Hoy':docDay===1?'Mañana':docDay===-1?'Ayer':formatDate(dateStr);
   document.getElementById('doc-stat-total').textContent=dayAppts.length;
@@ -883,12 +892,16 @@ function renderAdminResumen(){
   const emps=users.filter(u=>u.role==='employee').length,docs=users.filter(u=>u.role==='doctor').length,adms=users.filter(u=>u.role==='admin').length;
   const pending=getAppts().filter(a=>a.status==='pending'||a.status==='next').length;
   const solicitudes=getAppts().filter(a=>a.status==='solicitud').length;
+  const atendidas=getAppts().filter(a=>a.status==='done').length;
+  const canceladas=getAppts().filter(a=>a.status==='cancelled').length;
   document.getElementById('adm-stats-cards').innerHTML=`
     <div class="admin-stat"><div class="admin-stat-icon green"><i class="ti ti-users"></i></div><div><p class="admin-stat-label">Empleados</p><p class="admin-stat-num">${emps}</p></div></div>
     <div class="admin-stat"><div class="admin-stat-icon blue"><i class="ti ti-stethoscope"></i></div><div><p class="admin-stat-label">Médicos</p><p class="admin-stat-num">${docs}</p></div></div>
     <div class="admin-stat"><div class="admin-stat-icon purple"><i class="ti ti-shield-check"></i></div><div><p class="admin-stat-label">Administradores</p><p class="admin-stat-num">${adms}</p></div></div>
     <div class="admin-stat"><div class="admin-stat-icon amber"><i class="ti ti-calendar-clock"></i></div><div><p class="admin-stat-label">Citas pendientes</p><p class="admin-stat-num">${pending}</p></div></div>
-    <div class="admin-stat"><div class="admin-stat-icon" style="background:var(--orange-light);color:var(--orange);"><i class="ti ti-inbox"></i></div><div><p class="admin-stat-label">Solicitudes sin asignar</p><p class="admin-stat-num">${solicitudes}</p></div></div>`;
+    <div class="admin-stat"><div class="admin-stat-icon" style="background:var(--orange-light);color:var(--orange);"><i class="ti ti-inbox"></i></div><div><p class="admin-stat-label">Solicitudes sin asignar</p><p class="admin-stat-num">${solicitudes}</p></div></div>
+    <div class="admin-stat"><div class="admin-stat-icon green"><i class="ti ti-circle-check"></i></div><div><p class="admin-stat-label">Atendidas</p><p class="admin-stat-num">${atendidas}</p></div></div>
+    <div class="admin-stat"><div class="admin-stat-icon" style="background:#EDEDED;color:#666;"><i class="ti ti-ban"></i></div><div><p class="admin-stat-label">Canceladas</p><p class="admin-stat-num">${canceladas}</p></div></div>`;
   const upcoming=getAppts().filter(a=>a.date&&a.date>=todayStr()&&(a.status==='pending'||a.status==='next')).slice(0,5);
   const c=document.getElementById('adm-upcoming-container');
   if(!upcoming.length){c.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>No hay citas próximas</div>`;return;}
@@ -958,12 +971,20 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
     let st='';
     if(a.status==='done'){st=`<div class="appt-status"><span class="badge badge-done"><i class="ti ti-check" style="font-size:11px;"></i> Atendido</span>${a.tipoAtencion?`<span style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);padding:2px 7px;border-radius:99px;">${a.tipoAtencion}</span>`:''} ${a.doctorNote?`<div class="doctor-note"><i class="ti ti-notes" style="font-size:11px;margin-right:3px;vertical-align:-1px;"></i>${a.doctorNote}</div>`:`<span style="font-size:11px;color:var(--text-tertiary);">Sin descripción</span>`}<button class="btn-action done" onclick="openAtentionModal('${a.id}')"><i class="ti ti-edit" style="font-size:11px;"></i> Editar</button></div>`;}
     else if(a.status==='absent'){st=`<div class="appt-status"><span class="badge badge-absent"><i class="ti ti-x" style="font-size:11px;"></i> Ausente</span></div>`;}
-    else{const badge=isNext?`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`:`<span class="badge badge-pending">Pendiente</span>`;st=`<div class="appt-status">${badge}<div class="actions"><button class="btn-action done" onclick="openAtentionModal('${a.id}')">✓ Atendido</button><button class="btn-action absent" onclick="setStatus('${a.id}','absent')">✗ Ausente</button></div></div>`;}
-    html+=`<div class="appt-row"><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div>${st}</div>`;
+    else if(a.status==='cancelled'){st=`<div class="appt-status"><span class="badge badge-cancelled"><i class="ti ti-ban" style="font-size:11px;"></i> Cancelada</span></div>`;}
+    else{const badge=isNext?`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`:`<span class="badge badge-pending">Pendiente</span>`;st=`<div class="appt-status">${badge}<div class="actions"><button class="btn-action done" onclick="openAtentionModal('${a.id}')">✓ Atendido</button><button class="btn-action absent" onclick="setStatus('${a.id}','absent')">✗ Ausente</button><button class="btn-action absent" onclick="cancelarCita('${a.id}')" title="Cancelar cita"><i class="ti ti-ban" style="font-size:11px;"></i></button></div></div>`;}
+    html+=`<div class="appt-row" style="${a.status==='cancelled'?'opacity:0.6;':''}"><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div>${st}</div>`;
   });
   container.innerHTML=html;
 }
 function setStatus(id,status){updateAppt_fb(id,{status});}
+
+function cancelarCita(id){
+  const a=appointmentsCache[id];if(!a)return;
+  const cuando=a.date?`del ${formatDate(a.date)} a las ${to12h(a.time)}`:'(solicitud sin asignar)';
+  if(!confirm(`¿Cancelar la cita de ${a.name} ${cuando}?\n\nQuedará registrada en el historial como cancelada.`))return;
+  updateAppt_fb(id,{status:'cancelled',cancelledAt:new Date().toISOString(),cancelledBy:currentUser.role});
+}
 function openAtentionModal(id){
   const a=appointmentsCache[id];if(!a)return;
   pendingAtendidoId=id;
@@ -1161,7 +1182,7 @@ function changeSecDay(d){secDay+=d;renderSecAgenda();}
 
 function renderSecAgenda(){
   const dateStr=todayStr(secDay);
-  const dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud').sort((a,b)=>a.time.localeCompare(b.time));
+  const dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud'&&a.status!=='cancelled').sort((a,b)=>a.time.localeCompare(b.time));
   document.getElementById('sec-date-label').textContent=formatDateLong(dateStr);
   document.getElementById('sec-nav-label').textContent=secDay===0?'Hoy':secDay===1?'Mañana':secDay===-1?'Ayer':formatDate(dateStr);
   document.getElementById('sec-stat-total').textContent=dayAppts.length;
@@ -1197,7 +1218,7 @@ function renderSecAgenda(){
 
 function exportExcel(){
   try {
-    const sl={done:'Atendido',absent:'Ausente',pending:'Pendiente',next:'Pendiente'};
+    const sl={done:'Atendido',absent:'Ausente',pending:'Pendiente',next:'Pendiente',solicitud:'Solicitud sin asignar',cancelled:'Cancelada'};
     const appts=getAppts();
     if(!appts.length){ alert('No hay citas para exportar.'); return; }
     const data=appts.map(a=>({
