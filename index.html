@@ -618,7 +618,7 @@ const SLOTS = getSlotsForDate(null);
 let currentUser=null, loginRole='employee';
 let selectedSlot=null, admSelectedSlot=null;
 let docDay=0, admDay=0, secDay=0, pendingAtendidoId=null;
-let muMode='create', muEditUsername=null, muRole='employee';
+let muMode='create', muEditUsername=null, muRole='employee', muOrigRole='employee';
 let usersCache={}, appointmentsCache={};
 
 const usersRef = db.ref('users');
@@ -1007,6 +1007,19 @@ function confirmAtendido(){
 
 // USUARIOS
 function muSwitchRole(r){
+  // Sincronizar el nombre actual antes de cambiar de formulario
+  const prevRole=muRole;
+  let prevName='';
+  if(prevRole==='employee')prevName=document.getElementById('mu-name').value;
+  else if(prevRole==='doctor')prevName=document.getElementById('mu-doc-name').value;
+  else if(prevRole==='security')prevName=document.getElementById('mu-sec-name').value;
+  else if(prevRole==='admin')prevName=document.getElementById('mu-adm-name').value;
+  if(prevName){
+    document.getElementById('mu-name').value=prevName;
+    document.getElementById('mu-doc-name').value=prevName;
+    document.getElementById('mu-sec-name').value=prevName;
+    document.getElementById('mu-adm-name').value=prevName;
+  }
   muRole=r;
   const tabMap={employee:'emp',doctor:'doc',admin:'adm',security:'sec'};
   const colorMap={doctor:'doc',admin:'adm',security:'sec'};
@@ -1019,7 +1032,8 @@ function muSwitchRole(r){
   document.getElementById('mu-doc-fields').style.display=r==='doctor'?'block':'none';
   document.getElementById('mu-adm-fields').style.display=r==='admin'?'block':'none';
   document.getElementById('mu-sec-fields').style.display=r==='security'?'block':'none';
-  document.getElementById('mu-master-wrap').style.display=(r!=='employee'&&muMode==='create')?'block':'none';
+  // En edición, si cambia a rol privilegiado, pedir clave maestra
+  document.getElementById('mu-master-wrap').style.display=(r!=='employee'&&(muMode==='create'||muRole!==muOrigRole))?'block':'none';
 }
 function openUserModal(mode,username=null){
   muMode=mode;muEditUsername=username;
@@ -1030,18 +1044,23 @@ function openUserModal(mode,username=null){
   if(mode==='create'){
     document.getElementById('mu-title').textContent='Nuevo usuario';document.getElementById('mu-sub').textContent='Complete los datos del nuevo usuario';
     document.getElementById('mu-pass-hint').textContent='';document.getElementById('mu-pass').placeholder='Mínimo 6 caracteres';
-    muRole='employee';muSwitchRole('employee');
+    muOrigRole='employee';muRole='employee';muSwitchRole('employee');
   } else {
     const u=usersCache[username];if(!u)return;
     document.getElementById('mu-title').textContent='Editar usuario';document.getElementById('mu-sub').textContent='Contraseña en blanco = no cambiar.';
     document.getElementById('mu-pass-hint').textContent='(dejar en blanco para no cambiar)';document.getElementById('mu-pass').placeholder='Nueva contraseña (opcional)';
-    ['mu-tab-emp','mu-tab-doc','mu-tab-adm','mu-tab-sec'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
-    muRole=u.role;muSwitchRole(u.role);document.getElementById('mu-master-wrap').style.display='none';
+    // En edición se permite cambiar el rol y todos los campos
+    muOrigRole=u.role;muRole=u.role;muSwitchRole(u.role);document.getElementById('mu-master-wrap').style.display='none';
     document.getElementById('mu-user').value=u.username;
-    if(u.role==='employee'){document.getElementById('mu-name').value=u.name||'';document.getElementById('mu-cedula').value=u.cedula||'';document.getElementById('mu-phone').value=u.phone||'';document.getElementById('mu-dept').value=u.dept||'';}
-    else if(u.role==='doctor'){document.getElementById('mu-doc-name').value=u.name||'';document.getElementById('mu-specialty').value=u.specialty||'';}
-    else if(u.role==='security'){document.getElementById('mu-sec-name').value=u.name||'';}
-    else{document.getElementById('mu-adm-name').value=u.name||'';}
+    // Cargar TODOS los campos disponibles del usuario en todos los formularios de rol
+    document.getElementById('mu-name').value=u.name||'';
+    document.getElementById('mu-cedula').value=u.cedula||'';
+    document.getElementById('mu-phone').value=u.phone||'';
+    document.getElementById('mu-dept').value=u.dept||'';
+    document.getElementById('mu-doc-name').value=u.name||'';
+    document.getElementById('mu-specialty').value=u.specialty||'';
+    document.getElementById('mu-adm-name').value=u.name||'';
+    document.getElementById('mu-sec-name').value=u.name||'';
   }
   document.getElementById('modal-user').classList.add('open');
 }
@@ -1056,15 +1075,15 @@ function saveUser(){
   } else if(muRole==='doctor'){
     name=document.getElementById('mu-doc-name').value.trim();const specialty=document.getElementById('mu-specialty').value.trim();
     if(!name||!specialty||!user){errTxt.textContent='Complete nombre, especialidad y usuario.';errEl.classList.add('show');return;}
-    if(muMode==='create'&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}extra={specialty};
+    if((muMode==='create'||muRole!==muOrigRole)&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}extra={specialty};
   } else if(muRole==='security'){
     name=document.getElementById('mu-sec-name').value.trim();
     if(!name||!user){errTxt.textContent='Complete nombre y usuario.';errEl.classList.add('show');return;}
-    if(muMode==='create'&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}
+    if((muMode==='create'||muRole!==muOrigRole)&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}
   } else {
     name=document.getElementById('mu-adm-name').value.trim();
     if(!name||!user){errTxt.textContent='Complete nombre y usuario.';errEl.classList.add('show');return;}
-    if(muMode==='create'&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}
+    if((muMode==='create'||muRole!==muOrigRole)&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}
   }
   if(muMode==='create'){
     if(!pass||pass.length<6){errTxt.textContent='Contraseña mínimo 6 caracteres.';errEl.classList.add('show');return;}
@@ -1072,7 +1091,9 @@ function saveUser(){
     if(usersCache[user]){errTxt.textContent='Ese usuario ya existe.';errEl.classList.add('show');return;}
     saveUser_fb({name,username:user,password:pass,role:muRole,...extra}).then(()=>closeModal('modal-user'));
   } else {
-    const u=usersCache[muEditUsername];if(!u)return;let updated={...u,name,...extra};
+    const u=usersCache[muEditUsername];if(!u)return;
+    // Reconstruir el objeto limpio según el rol nuevo (evita campos viejos de otro rol)
+    let updated={username:u.username,password:u.password,role:muRole,name,...extra};
     if(user!==muEditUsername&&usersCache[user]){errTxt.textContent='Ese usuario ya existe.';errEl.classList.add('show');return;}
     if(pass){if(pass.length<6){errTxt.textContent='Contraseña mínimo 6 caracteres.';errEl.classList.add('show');return;}if(pass!==pass2){errTxt.textContent='Las contraseñas no coinciden.';errEl.classList.add('show');return;}updated.password=pass;}
     updated.username=user;
