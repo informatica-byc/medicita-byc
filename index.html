@@ -269,9 +269,10 @@ const db = firebase.database();
     <div class="modal-patient"><strong id="asig-patient-name"></strong><span id="asig-patient-detail"></span></div>
     <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="asig-date"></div>
     <div class="form-row">
-      <label class="form-label">Hora disponible</label>
+      <label class="form-label">Hora de la cita</label>
       <p id="asig-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p>
-      <div class="slots-grid" id="asig-slots-grid"></div>
+      <input class="form-input" type="time" id="asig-time-input" style="height:40px;">
+      <p style="font-size:11px;color:var(--text-tertiary);margin-top:5px;">Escriba la hora dentro del turno del mes</p>
     </div>
     <div class="error-msg" id="asig-error"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="asig-error-txt"></span></div>
     <div class="modal-actions">
@@ -305,9 +306,9 @@ const db = firebase.database();
     </div>
     <div class="form-row"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="nc-notes" placeholder="Describa brevemente..."></textarea></div>
     <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="nc-date"></div>
-    <div class="form-row"><label class="form-label">Hora disponible</label>
+    <div class="form-row"><label class="form-label">Hora de la cita</label>
       <p id="nc-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p>
-      <div class="slots-grid" id="nc-slots-grid"></div>
+      <input class="form-input" type="time" id="nc-time-input" style="height:40px;">
     </div>
     <div class="error-msg" id="nc-error"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="nc-error-txt"></span></div>
     <div class="modal-actions">
@@ -568,7 +569,7 @@ const db = firebase.database();
         <div class="form-row"><label class="form-label">Motivo</label><select class="form-input" id="adm-f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Incapacidad</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select></div>
         <div class="form-row"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="adm-f-notes" placeholder="Describa brevemente..."></textarea></div>
         <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="adm-f-date"></div>
-        <div class="form-row"><label class="form-label">Hora disponible</label><p id="adm-slots-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p><div class="slots-grid" id="adm-slots-grid"></div></div>
+        <div class="form-row"><label class="form-label">Hora de la cita</label><p id="adm-slots-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p><input class="form-input" type="time" id="adm-f-time-input" style="height:40px;"></div>
         <button class="btn-primary" onclick="admBookAppointment()" style="margin-top:1.25rem;"><i class="ti ti-calendar-check"></i> Confirmar cita</button>
       </div>
     </div>
@@ -620,9 +621,21 @@ let usersCache={}, appointmentsCache={};
 const usersRef = db.ref('users');
 const apptsRef = db.ref('appointments');
 
+let sessionRestored=false;
 usersRef.on('value', snap => {
   usersCache = snap.val() || {};
   if(document.getElementById('apanel-usuarios')?.classList.contains('active')) renderUsersTable();
+  // Restaurar sesión guardada al cargar (solo una vez)
+  if(!sessionRestored){
+    sessionRestored=true;
+    try{
+      const saved=sessionStorage.getItem('mc_session');
+      if(saved && usersCache[saved]){
+        loginRole=usersCache[saved].role;
+        enterProfile(usersCache[saved], false);
+      }
+    }catch(e){}
+  }
 });
 
 apptsRef.on('value', snap => {
@@ -642,7 +655,7 @@ function refreshCurrentView(){
 }
 
 function getUsers(){ return Object.values(usersCache); }
-function getAppts(){ return Object.values(appointmentsCache).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time)); }
+function getAppts(){ return Object.values(appointmentsCache).sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.time||'').localeCompare(b.time||'')); }
 function saveUser_fb(u){ return usersRef.child(u.username).set(u); }
 function deleteUser_fb(u){ return usersRef.child(u).remove(); }
 function saveAppt_fb(a){ const k=apptsRef.push().key; a.id=k; return apptsRef.child(k).set(a); }
@@ -704,24 +717,44 @@ function doLogin(){
   if(!found){errTxt.textContent='Usuario no encontrado para este rol.';errEl.classList.add('show');return;}
   if(found.password!==pass){errTxt.textContent='Contraseña incorrecta.';errEl.classList.add('show');return;}
   currentUser=found;
-  if(loginRole==='employee'){
+  try{ sessionStorage.setItem('mc_session', found.username); }catch(e){}
+  enterProfile(found, true);
+}
+
+function enterProfile(found, animate){
+  currentUser=found;
+  const role=found.role;
+  if(role==='employee'){
     document.getElementById('emp-name-label').textContent=found.name;
     document.getElementById('f-name').value=found.name;
     document.getElementById('f-id').value=found.cedula||'';
     document.getElementById('f-dept').value=found.dept||'';
     document.getElementById('f-phone').value=found.phone||'';
-    showScreen('screen-employee');
+    if(animate){showScreen('screen-employee');}else{showScreenInstant('screen-employee');}
     renderEmpCitas();
-  } else if(loginRole==='doctor'){
+  } else if(role==='doctor'){
     document.getElementById('doc-name-label').textContent='Dr. '+found.name;
-    docDay=0;showScreen('screen-doctor');renderDocAgenda();
-  } else if(loginRole==='security'){
+    docDay=0;
+    if(animate){showScreen('screen-doctor');}else{showScreenInstant('screen-doctor');}
+    renderDocAgenda();
+  } else if(role==='security'){
     document.getElementById('sec-name-label').textContent=found.name;
-    secDay=0;showScreen('screen-security');renderSecAgenda();
+    secDay=0;
+    if(animate){showScreen('screen-security');}else{showScreenInstant('screen-security');}
+    renderSecAgenda();
   } else {
     document.getElementById('adm-name-label').textContent=found.name;
-    admDay=0;showScreen('screen-admin');switchAdminTab('resumen');
+    admDay=0;
+    if(animate){showScreen('screen-admin');}else{showScreenInstant('screen-admin');}
+    switchAdminTab('resumen');
   }
+}
+
+function showScreenInstant(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.opacity='';s.style.transition='';});
+  const next=document.getElementById(id);
+  next.classList.add('active');
+  next.style.opacity='1';
 }
 function doRegister(role){
   const pfx={employee:'re',doctor:'rd',admin:'ra'}[role];
@@ -753,6 +786,7 @@ function doRegister(role){
 }
 function logout(){
   currentUser=null;selectedSlot=null;admSelectedSlot=null;docDay=0;admDay=0;
+  try{ sessionStorage.removeItem('mc_session'); }catch(e){}
   document.getElementById('l-user').value='';document.getElementById('l-pass').value='';
   document.getElementById('l-error').classList.remove('show');
   showScreen('screen-login');
@@ -878,24 +912,20 @@ function renderAdmCitaForm(){
   ['adm-f-name','adm-f-id','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('adm-f-dept').value='';
   document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
-  admSelectedSlot=null;const t=todayStr();const el=document.getElementById('adm-f-date');el.min=t;el.value=t;el.onchange=renderAdmSlots;renderAdmSlots();
+  document.getElementById('adm-f-time-input').value='';
+  const t=todayStr();const el=document.getElementById('adm-f-date');el.min=t;el.value=t;el.onchange=updateAdmTurno;updateAdmTurno();
 }
 function fillAdmEmpData(){
   const u=usersCache[document.getElementById('adm-f-emp').value];
   document.getElementById('adm-f-name').value=u?u.name:'';document.getElementById('adm-f-id').value=u?u.cedula||'':'';
   document.getElementById('adm-f-dept').value=u?u.dept||'':'';document.getElementById('adm-f-phone').value=u?u.phone||'':'';
 }
-function renderAdmSlots(){
+function updateAdmTurno(){
   const date=document.getElementById('adm-f-date').value;
-  const slots=getSlotsForDate(date);
-  const taken=getAppts().filter(a=>a.date===date).map(a=>a.time);
-  const grid=document.getElementById('adm-slots-grid');grid.innerHTML='';
   const month=date?parseInt(date.split('-')[1]):new Date().getMonth()+1;
-  const turno=month%2!==0?'🌆 Turno de tarde (12:15 – 4:45 PM)':'🌅 Turno de mañana (8:15 – 11:45 AM)';
+  const turno=month%2!==0?'🌆 Turno de tarde (recomendado 12:15 – 4:45 PM)':'🌅 Turno de mañana (recomendado 8:15 – 11:45 AM)';
   const label=document.getElementById('adm-slots-turno-label');
   if(label) label.textContent=turno;
-  if(admSelectedSlot&&!slots.includes(admSelectedSlot)) admSelectedSlot=null;
-  slots.forEach(s=>{const div=document.createElement('div');const isTaken=taken.includes(s);div.className='slot'+(isTaken?' taken':'')+(admSelectedSlot===s&&!isTaken?' selected':'');div.textContent=to12h(s);if(!isTaken)div.onclick=()=>{admSelectedSlot=s;renderAdmSlots();};grid.appendChild(div);});
 }
 function admBookAppointment(){
   const name=document.getElementById('adm-f-name').value.trim();
@@ -905,13 +935,14 @@ function admBookAppointment(){
   const reason=document.getElementById('adm-f-reason').value;
   const notes=document.getElementById('adm-f-notes').value.trim();
   const date=document.getElementById('adm-f-date').value;
-  if(!name||!reason||!date||!admSelectedSlot){alert('Complete al menos el nombre, motivo, fecha y horario.');return;}
-  saveAppt_fb({name,dept:dept||'',reason,notes,date,time:admSelectedSlot,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
-    alert(`Cita agendada para ${name} el ${formatDate(date)} a las ${to12h(admSelectedSlot)}.`);
+  const time=document.getElementById('adm-f-time-input').value;
+  if(!name||!reason||!date||!time){alert('Complete al menos el nombre, motivo, fecha y hora.');return;}
+  saveAppt_fb({name,dept:dept||'',reason,notes,date,time,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
+    alert(`Cita agendada para ${name} el ${formatDate(date)} a las ${to12h(time)}.`);
     document.getElementById('adm-f-emp').value='';document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
-    ['adm-f-name','adm-f-id','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
+    ['adm-f-name','adm-f-id','adm-f-phone','adm-f-time-input'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('adm-f-dept').value='';
-    admSelectedSlot=null;renderAdmSlots();
+    updateAdmTurno();
   });
 }
 
@@ -1041,57 +1072,50 @@ let pendingAsignarId=null, asigSelectedSlot=null;
 function openAsignarModal(id){
   const a=appointmentsCache[id];if(!a)return;
   pendingAsignarId=id;
-  asigSelectedSlot=null;
   document.getElementById('asig-patient-name').textContent=a.name;
   document.getElementById('asig-patient-detail').textContent=`${a.dept||''} · ${a.cedula||''} — ${a.reason}`;
   document.getElementById('asig-error').classList.remove('show');
+  document.getElementById('asig-time-input').value='';
   const t=todayStr();
   const el=document.getElementById('asig-date');
-  el.min=t;el.value=t;el.onchange=renderAsigSlots;
-  renderAsigSlots();
+  el.min=t;el.value=t;el.onchange=updateAsigTurno;
+  updateAsigTurno();
   document.getElementById('modal-asignar').classList.add('open');
 }
 
-function renderAsigSlots(){
+function updateAsigTurno(){
   const date=document.getElementById('asig-date').value;
-  const slots=getSlotsForDate(date);
-  const taken=getAppts().filter(a=>a.date===date&&a.time).map(a=>a.time);
-  const grid=document.getElementById('asig-slots-grid');grid.innerHTML='';
   const month=date?parseInt(date.split('-')[1]):new Date().getMonth()+1;
-  const turno=month%2!==0?'🌆 Turno de tarde (12:15 – 4:45 PM)':'🌅 Turno de mañana (8:15 – 11:45 AM)';
+  const turno=month%2!==0?'🌆 Turno de tarde (recomendado 12:15 – 4:45 PM)':'🌅 Turno de mañana (recomendado 8:15 – 11:45 AM)';
   document.getElementById('asig-turno-label').textContent=turno;
-  if(asigSelectedSlot&&!slots.includes(asigSelectedSlot))asigSelectedSlot=null;
-  slots.forEach(s=>{
-    const div=document.createElement('div');
-    const isTaken=taken.includes(s);
-    div.className='slot'+(isTaken?' taken':'')+(asigSelectedSlot===s&&!isTaken?' selected':'');
-    div.textContent=to12h(s);
-    if(!isTaken)div.onclick=()=>{asigSelectedSlot=s;renderAsigSlots();};
-    grid.appendChild(div);
-  });
 }
 
 function confirmAsignar(){
   const date=document.getElementById('asig-date').value;
+  const time=document.getElementById('asig-time-input').value;
   const errEl=document.getElementById('asig-error'),errTxt=document.getElementById('asig-error-txt');
   errEl.classList.remove('show');
-  if(!date||!asigSelectedSlot){errTxt.textContent='Seleccione fecha y hora.';errEl.classList.add('show');return;}
-  updateAppt_fb(pendingAsignarId,{date,time:asigSelectedSlot,status:'pending'}).then(()=>{
+  if(!date||!time){errTxt.textContent='Seleccione fecha y hora.';errEl.classList.add('show');return;}
+  updateAppt_fb(pendingAsignarId,{date,time,status:'pending'}).then(()=>{
     closeModal('modal-asignar');
+    // Ir a la fecha asignada en la agenda del médico
+    const today=todayStr();
+    const diff=Math.round((new Date(date)-new Date(today))/(1000*60*60*24));
+    docDay=diff;
+    renderDocAgenda();
   });
 }
 
 let ncSelectedSlot=null;
 
 function openNuevaCitaModal(){
-  ncSelectedSlot=null;
   document.getElementById('nc-error').classList.remove('show');
   const emps=getUsers().filter(u=>u.role==='employee');
   document.getElementById('nc-emp').innerHTML='<option value="">Seleccionar registrado...</option>'+emps.map(u=>`<option value="${u.username}">${u.name} (${u.dept||'—'})</option>`).join('');
-  ['nc-name','nc-id','nc-phone','nc-notes'].forEach(id=>document.getElementById(id).value='');
+  ['nc-name','nc-id','nc-phone','nc-notes','nc-time-input'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nc-dept').value='';document.getElementById('nc-reason').value='';document.getElementById('nc-emp').value='';
-  const t=todayStr();const el=document.getElementById('nc-date');el.min=t;el.value=t;el.onchange=renderNcSlots;
-  renderNcSlots();
+  const t=todayStr();const el=document.getElementById('nc-date');el.min=t;el.value=t;el.onchange=updateNcTurno;
+  updateNcTurno();
   document.getElementById('modal-nueva-cita').classList.add('open');
 }
 
@@ -1105,22 +1129,10 @@ function fillNcEmpData(){
   }
 }
 
-function renderNcSlots(){
+function updateNcTurno(){
   const date=document.getElementById('nc-date').value;
-  const slots=getSlotsForDate(date);
-  const taken=getAppts().filter(a=>a.date===date&&a.time).map(a=>a.time);
-  const grid=document.getElementById('nc-slots-grid');grid.innerHTML='';
   const month=date?parseInt(date.split('-')[1]):new Date().getMonth()+1;
-  document.getElementById('nc-turno-label').textContent=month%2!==0?'🌆 Turno de tarde (12:15 – 4:45 PM)':'🌅 Turno de mañana (8:15 – 11:45 AM)';
-  if(ncSelectedSlot&&!slots.includes(ncSelectedSlot))ncSelectedSlot=null;
-  slots.forEach(s=>{
-    const div=document.createElement('div');
-    const isTaken=taken.includes(s);
-    div.className='slot'+(isTaken?' taken':'')+(ncSelectedSlot===s&&!isTaken?' selected':'');
-    div.textContent=to12h(s);
-    if(!isTaken)div.onclick=()=>{ncSelectedSlot=s;renderNcSlots();};
-    grid.appendChild(div);
-  });
+  document.getElementById('nc-turno-label').textContent=month%2!==0?'🌆 Turno de tarde (recomendado 12:15 – 4:45 PM)':'🌅 Turno de mañana (recomendado 8:15 – 11:45 AM)';
 }
 
 function confirmNuevaCita(){
@@ -1131,11 +1143,17 @@ function confirmNuevaCita(){
   const reason=document.getElementById('nc-reason').value;
   const notes=document.getElementById('nc-notes').value.trim();
   const date=document.getElementById('nc-date').value;
+  const time=document.getElementById('nc-time-input').value;
   const errEl=document.getElementById('nc-error'),errTxt=document.getElementById('nc-error-txt');
   errEl.classList.remove('show');
-  if(!name||!reason||!date||!ncSelectedSlot){errTxt.textContent='Complete nombre, motivo, fecha y hora.';errEl.classList.add('show');return;}
-  saveAppt_fb({name,dept:dept||'',reason,notes,date,time:ncSelectedSlot,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
+  if(!name||!reason||!date||!time){errTxt.textContent='Complete nombre, motivo, fecha y hora.';errEl.classList.add('show');return;}
+  saveAppt_fb({name,dept:dept||'',reason,notes,date,time,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
     closeModal('modal-nueva-cita');
+    if(currentUser.role==='doctor'){
+      const today=todayStr();
+      const diff=Math.round((new Date(date)-new Date(today))/(1000*60*60*24));
+      docDay=diff;renderDocAgenda();
+    }
   });
 }
 
