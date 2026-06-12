@@ -31,13 +31,14 @@ const db = firebase.database();
     --green:#1D9E75; --green-dark:#0F6E56; --green-light:#E1F5EE;
     --blue:#185FA5; --blue-light:#E6F1FB;
     --purple:#6B3FA0; --purple-light:#F0EBF9;
+    --orange:#C05A00; --orange-light:#FEF0E0;
   }
   @media (prefers-color-scheme:dark){
     :root{
       --bg-primary:#1e1e1e; --bg-secondary:#2a2a2a; --bg-tertiary:#161616;
       --text-primary:#f0f0f0; --text-secondary:#a0a0a0; --text-tertiary:#666;
       --border-light:rgba(255,255,255,0.08); --border-mid:rgba(255,255,255,0.15);
-      --green-light:#0a3326; --blue-light:#051e38; --purple-light:#1e1030;
+      --green-light:#0a3326; --blue-light:#051e38; --purple-light:#1e1030; --orange-light:#2e1800;
     }
   }
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh;}
@@ -57,6 +58,7 @@ const db = firebase.database();
   .nav-role-badge.emp{background:var(--green-light);color:var(--green-dark);}
   .nav-role-badge.doc{background:var(--blue-light);color:var(--blue);}
   .nav-role-badge.adm{background:var(--purple-light);color:var(--purple);}
+  .nav-role-badge.sec{background:var(--orange-light);color:var(--orange);}
   .btn-nav{height:30px;padding:0 12px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:transparent;color:var(--text-secondary);font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit;}
   .btn-nav:hover{border-color:var(--green);color:var(--green);}
   .screen{display:none;opacity:0;transition:opacity 0.4s ease;}
@@ -85,14 +87,15 @@ const db = firebase.database();
   .error-msg.show{display:flex;}
   .success-msg{font-size:12px;color:#3B6D11;display:none;align-items:center;gap:5px;background:#EAF3DE;border-radius:var(--radius-md);padding:8px 10px;margin-top:6px;}
   .success-msg.show{display:flex;}
-  .role-tabs-3{display:grid;grid-template-columns:1fr 1fr 1fr;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);overflow:hidden;margin-bottom:1.25rem;}
+  .role-tabs-3{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);overflow:hidden;margin-bottom:1.25rem;}
   .role-tab{height:52px;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .15s;border-right:0.5px solid var(--border-mid);}
   .role-tab:last-child{border-right:none;}
   .role-tab i{font-size:18px;}
   .role-tab.active.emp{background:var(--green-light);color:var(--green-dark);font-weight:600;}
   .role-tab.active.doc{background:var(--blue-light);color:var(--blue);font-weight:600;}
   .role-tab.active.adm{background:var(--purple-light);color:var(--purple);font-weight:600;}
-  .role-tabs-mu{display:grid;grid-template-columns:1fr 1fr 1fr;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);overflow:hidden;margin-bottom:0;}
+  .role-tab.active.sec{background:var(--orange-light);color:var(--orange);font-weight:600;}
+  .role-tabs-mu{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);overflow:hidden;margin-bottom:0;}
   .role-tab-mu{height:44px;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;border-right:0.5px solid var(--border-mid);}
   .role-tab-mu:last-child{border-right:none;}
   .role-tab-mu i{font-size:15px;}
@@ -186,6 +189,7 @@ const db = firebase.database();
   .role-pill.emp{background:var(--green-light);color:var(--green-dark);}
   .role-pill.doc{background:var(--blue-light);color:var(--blue);}
   .role-pill.adm{background:var(--purple-light);color:var(--purple);}
+  .role-pill.sec{background:var(--orange-light);color:var(--orange);}
   .admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
   @media(max-width:600px){.admin-stats{grid-template-columns:repeat(2,1fr);}}
   .admin-stat{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;}
@@ -228,6 +232,21 @@ const db = firebase.database();
     <p class="modal-title">Registrar atención</p>
     <p class="modal-sub">Ingrese la descripción de lo realizado</p>
     <div class="modal-patient"><strong id="modal-patient-name"></strong><span id="modal-patient-detail"></span></div>
+    <div style="margin-bottom:1rem;">
+      <label class="form-label" style="margin-bottom:6px;">Tipo de atención</label>
+      <select class="form-input" id="modal-tipo-atencion" style="height:40px;">
+        <option value="">Seleccionar...</option>
+        <option>Consulta</option>
+        <option>Valoración</option>
+        <option>Incapacidad</option>
+        <option>Accidente laboral</option>
+        <option>Riesgo laboral</option>
+        <option>Certificado</option>
+        <option>Referencia</option>
+        <option>Seguimiento</option>
+        <option>Otro</option>
+      </select>
+    </div>
     <label class="form-label" style="margin-bottom:6px;">Descripción / Diagnóstico</label>
     <textarea class="modal-textarea" id="modal-desc" placeholder="Ej. Lumbalgia leve. Ibuprofeno 400mg c/8h por 5 días..."></textarea>
     <div class="modal-actions">
@@ -248,6 +267,7 @@ const db = firebase.database();
         <button class="role-tab-mu active" id="mu-tab-emp" onclick="muSwitchRole('employee')"><i class="ti ti-user"></i> Empleado</button>
         <button class="role-tab-mu" id="mu-tab-doc" onclick="muSwitchRole('doctor')"><i class="ti ti-stethoscope"></i> Médico</button>
         <button class="role-tab-mu" id="mu-tab-adm" onclick="muSwitchRole('admin')"><i class="ti ti-shield-check"></i> Admin</button>
+        <button class="role-tab-mu" id="mu-tab-sec" onclick="muSwitchRole('security')"><i class="ti ti-shield-lock"></i> Seguridad</button>
       </div>
     </div>
     <div id="mu-master-wrap" style="display:none;">
@@ -263,7 +283,7 @@ const db = firebase.database();
         <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" type="tel" id="mu-phone" placeholder="8888-0000"></div>
       </div>
       <div class="form-row"><label class="form-label">Departamento</label>
-        <select class="form-input" id="mu-dept"><option value="">Seleccionar...</option><option>Administración</option><option>Operaciones</option><option>Recursos Humanos</option><option>Finanzas</option><option>TI</option><option>Ventas</option><option>Producción</option><option>Exportaciones</option></select>
+        <select class="form-input" id="mu-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Planta</option><option>Fincas</option><option>Operaciones</option><option>Recursos Humanos</option><option>Finanzas</option><option>TI</option><option>Ventas</option><option>Producción</option><option>Exportaciones</option></select>
       </div>
     </div>
     <div id="mu-doc-fields" style="display:none;">
@@ -272,6 +292,9 @@ const db = firebase.database();
     </div>
     <div id="mu-adm-fields" style="display:none;">
       <div class="form-row"><label class="form-label">Nombre completo</label><input class="form-input" type="text" id="mu-adm-name" placeholder="Ej. Ana González"></div>
+    </div>
+    <div id="mu-sec-fields" style="display:none;">
+      <div class="form-row"><label class="form-label">Nombre completo</label><input class="form-input" type="text" id="mu-sec-name" placeholder="Ej. Carlos Segura"></div>
     </div>
     <div class="modal-divider"></div>
     <div class="form-row"><label class="form-label">Usuario</label><input class="form-input" type="text" id="mu-user" placeholder="Ej. jperez"></div>
@@ -298,6 +321,7 @@ const db = firebase.database();
       <button class="role-tab emp active" id="ltab-employee" onclick="switchLoginRole('employee')"><i class="ti ti-user"></i>Empleado</button>
       <button class="role-tab doc" id="ltab-doctor" onclick="switchLoginRole('doctor')"><i class="ti ti-stethoscope"></i>Médico</button>
       <button class="role-tab adm" id="ltab-admin" onclick="switchLoginRole('admin')"><i class="ti ti-shield-check"></i>Admin</button>
+      <button class="role-tab sec" id="ltab-security" onclick="switchLoginRole('security')"><i class="ti ti-shield-lock"></i>Seguridad</button>
     </div>
     <div class="form-row"><label class="form-label">Usuario</label><input class="form-input" type="text" id="l-user" placeholder="Ej. jperez" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="form-row"><label class="form-label">Contraseña</label>
@@ -317,7 +341,7 @@ const db = firebase.database();
     <p class="auth-title">Crear cuenta — Empleado</p><p class="auth-sub">Complete sus datos para registrarse</p>
     <div class="form-row"><label class="form-label">Nombre completo</label><input class="form-input" type="text" id="re-name" placeholder="Ej. Juan Pérez"></div>
     <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" type="text" id="re-cedula" placeholder="Ej. 3-0456-0123"></div>
-    <div class="form-row"><label class="form-label">Departamento</label><select class="form-input" id="re-dept"><option value="">Seleccionar...</option><option>Administración</option><option>Operaciones</option><option>Recursos Humanos</option><option>Finanzas</option><option>TI</option><option>Ventas</option><option>Producción</option><option>Exportaciones</option></select></div>
+    <div class="form-row"><label class="form-label">Departamento</label><select class="form-input" id="re-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Planta</option><option>Fincas</option><option>Operaciones</option><option>Recursos Humanos</option><option>Finanzas</option><option>TI</option><option>Ventas</option><option>Producción</option><option>Exportaciones</option></select></div>
     <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" type="tel" id="re-phone" placeholder="Ej. 8888-0000"></div>
     <div class="form-row"><label class="form-label">Usuario</label><input class="form-input" type="text" id="re-user" placeholder="Ej. jperez"></div>
     <div class="form-row"><label class="form-label">Contraseña</label><div class="pass-wrap"><input class="form-input" type="password" id="re-pass" placeholder="Mínimo 6 caracteres"><button class="toggle-pass" onclick="toggleVis('re-pass','eye2')" type="button"><i class="ti ti-eye" id="eye2"></i></button></div></div>
@@ -512,7 +536,7 @@ function getSlotsForDate(dateStr) {
 const SLOTS = getSlotsForDate(null);
 let currentUser=null, loginRole='employee';
 let selectedSlot=null, admSelectedSlot=null;
-let docDay=0, admDay=0, pendingAtendidoId=null;
+let docDay=0, admDay=0, secDay=0, pendingAtendidoId=null;
 let muMode='create', muEditUsername=null, muRole='employee';
 let usersCache={}, appointmentsCache={};
 
@@ -537,6 +561,7 @@ function refreshCurrentView(){
     if(at==='atab-resumen') renderAdminResumen();
     else if(at==='atab-agenda') renderAdmAgenda();
   } else if(currentUser.role==='employee') renderSlots();
+  else if(currentUser.role==='security') renderSecAgenda();
 }
 
 function getUsers(){ return Object.values(usersCache); }
@@ -579,13 +604,18 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 function switchLoginRole(r){
   loginRole=r;
-  ['employee','doctor','admin'].forEach(x=>{const t=document.getElementById('ltab-'+x);t.className='role-tab '+(x==='employee'?'emp':x==='doctor'?'doc':'adm')+(x===r?' active':'');});
+  const map={employee:'emp',doctor:'doc',admin:'adm',security:'sec'};
+  ['employee','doctor','admin','security'].forEach(x=>{
+    const t=document.getElementById('ltab-'+x);
+    if(t) t.className='role-tab '+map[x]+(x===r?' active':'');
+  });
   document.getElementById('l-error').classList.remove('show');
 }
 function goRegister(){
   if(loginRole==='doctor') showScreen('screen-reg-doctor');
   else if(loginRole==='admin') showScreen('screen-reg-admin');
   else showScreen('screen-reg-employee');
+  // Nota: seguridad no tiene auto-registro, solo lo crea el admin
 }
 function doLogin(){
   const user=document.getElementById('l-user').value.trim().toLowerCase();
@@ -608,6 +638,9 @@ function doLogin(){
   } else if(loginRole==='doctor'){
     document.getElementById('doc-name-label').textContent='Dr. '+found.name;
     docDay=0;showScreen('screen-doctor');renderDocAgenda();
+  } else if(loginRole==='security'){
+    document.getElementById('sec-name-label').textContent=found.name;
+    secDay=0;showScreen('screen-security');renderSecAgenda();
   } else {
     document.getElementById('adm-name-label').textContent=found.name;
     admDay=0;showScreen('screen-admin');switchAdminTab('resumen');
@@ -761,7 +794,7 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
     const apptMin=parseInt(a.time.split(':')[0])*60+parseInt(a.time.split(':')[1]);
     const isNext=dayOffset===0&&(a.status==='next'||(a.status==='pending'&&apptMin>=nowMin&&i===dayAppts.findIndex(x=>(x.status==='pending'||x.status==='next')&&(parseInt(x.time.split(':')[0])*60+parseInt(x.time.split(':')[1]))>=nowMin)));
     let st='';
-    if(a.status==='done'){st=`<div class="appt-status"><span class="badge badge-done"><i class="ti ti-check" style="font-size:11px;"></i> Atendido</span>${a.doctorNote?`<div class="doctor-note"><i class="ti ti-notes" style="font-size:11px;margin-right:3px;vertical-align:-1px;"></i>${a.doctorNote}</div>`:`<span style="font-size:11px;color:var(--text-tertiary);">Sin descripción</span>`}<button class="btn-action done" onclick="openAtentionModal('${a.id}')"><i class="ti ti-edit" style="font-size:11px;"></i> Editar</button></div>`;}
+    if(a.status==='done'){st=`<div class="appt-status"><span class="badge badge-done"><i class="ti ti-check" style="font-size:11px;"></i> Atendido</span>${a.tipoAtencion?`<span style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);padding:2px 7px;border-radius:99px;">${a.tipoAtencion}</span>`:''} ${a.doctorNote?`<div class="doctor-note"><i class="ti ti-notes" style="font-size:11px;margin-right:3px;vertical-align:-1px;"></i>${a.doctorNote}</div>`:`<span style="font-size:11px;color:var(--text-tertiary);">Sin descripción</span>`}<button class="btn-action done" onclick="openAtentionModal('${a.id}')"><i class="ti ti-edit" style="font-size:11px;"></i> Editar</button></div>`;}
     else if(a.status==='absent'){st=`<div class="appt-status"><span class="badge badge-absent"><i class="ti ti-x" style="font-size:11px;"></i> Ausente</span></div>`;}
     else{const badge=isNext?`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`:`<span class="badge badge-pending">Pendiente</span>`;st=`<div class="appt-status">${badge}<div class="actions"><button class="btn-action done" onclick="openAtentionModal('${a.id}')">✓ Atendido</button><button class="btn-action absent" onclick="setStatus('${a.id}','absent')">✗ Ausente</button></div></div>`;}
     html+=`<div class="appt-row"><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div>${st}</div>`;
@@ -775,25 +808,31 @@ function openAtentionModal(id){
   document.getElementById('modal-patient-name').textContent=a.name;
   document.getElementById('modal-patient-detail').textContent=`${a.dept} · ${a.cedula} · ${to12h(a.time)} — ${a.reason}`;
   document.getElementById('modal-desc').value=a.doctorNote||'';
+  document.getElementById('modal-tipo-atencion').value=a.tipoAtencion||'';
   document.getElementById('modal-atention').classList.add('open');
   setTimeout(()=>document.getElementById('modal-desc').focus(),100);
 }
 function confirmAtendido(){
-  updateAppt_fb(pendingAtendidoId,{status:'done',doctorNote:document.getElementById('modal-desc').value.trim()});
+  const tipoAtencion=document.getElementById('modal-tipo-atencion').value;
+  const doctorNote=document.getElementById('modal-desc').value.trim();
+  updateAppt_fb(pendingAtendidoId,{status:'done',doctorNote,tipoAtencion});
   closeModal('modal-atention');
 }
 
 // USUARIOS
 function muSwitchRole(r){
   muRole=r;
-  ['employee','doctor','admin'].forEach(x=>{
-    const id='mu-tab-'+(x==='employee'?'emp':x==='doctor'?'doc':'adm');
-    const el=document.getElementById(id);
-    el.className='role-tab-mu'+(x===r?' active':'')+(r==='doctor'&&x===r?' doc':'')+(r==='admin'&&x===r?' adm':'');
+  const tabMap={employee:'emp',doctor:'doc',admin:'adm',security:'sec'};
+  const colorMap={doctor:'doc',admin:'adm',security:'sec'};
+  ['employee','doctor','admin','security'].forEach(x=>{
+    const el=document.getElementById('mu-tab-'+tabMap[x]);
+    if(!el)return;
+    el.className='role-tab-mu'+(x===r?' active':'')+(r===x&&colorMap[x]?' '+colorMap[x]:'');
   });
   document.getElementById('mu-emp-fields').style.display=r==='employee'?'block':'none';
   document.getElementById('mu-doc-fields').style.display=r==='doctor'?'block':'none';
   document.getElementById('mu-adm-fields').style.display=r==='admin'?'block':'none';
+  document.getElementById('mu-sec-fields').style.display=r==='security'?'block':'none';
   document.getElementById('mu-master-wrap').style.display=(r!=='employee'&&muMode==='create')?'block':'none';
 }
 function openUserModal(mode,username=null){
@@ -801,7 +840,7 @@ function openUserModal(mode,username=null){
   document.getElementById('mu-error').classList.remove('show');
   ['mu-master','mu-name','mu-cedula','mu-phone','mu-doc-name','mu-specialty','mu-adm-name','mu-user','mu-pass','mu-pass2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('mu-dept').value='';
-  ['mu-tab-emp','mu-tab-doc','mu-tab-adm'].forEach(id=>document.getElementById(id).disabled=false);
+  ['mu-tab-emp','mu-tab-doc','mu-tab-adm','mu-tab-sec'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=false;});
   if(mode==='create'){
     document.getElementById('mu-title').textContent='Nuevo usuario';document.getElementById('mu-sub').textContent='Complete los datos del nuevo usuario';
     document.getElementById('mu-pass-hint').textContent='';document.getElementById('mu-pass').placeholder='Mínimo 6 caracteres';
@@ -810,11 +849,12 @@ function openUserModal(mode,username=null){
     const u=usersCache[username];if(!u)return;
     document.getElementById('mu-title').textContent='Editar usuario';document.getElementById('mu-sub').textContent='Contraseña en blanco = no cambiar.';
     document.getElementById('mu-pass-hint').textContent='(dejar en blanco para no cambiar)';document.getElementById('mu-pass').placeholder='Nueva contraseña (opcional)';
-    ['mu-tab-emp','mu-tab-doc','mu-tab-adm'].forEach(id=>document.getElementById(id).disabled=true);
+    ['mu-tab-emp','mu-tab-doc','mu-tab-adm','mu-tab-sec'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
     muRole=u.role;muSwitchRole(u.role);document.getElementById('mu-master-wrap').style.display='none';
     document.getElementById('mu-user').value=u.username;
     if(u.role==='employee'){document.getElementById('mu-name').value=u.name||'';document.getElementById('mu-cedula').value=u.cedula||'';document.getElementById('mu-phone').value=u.phone||'';document.getElementById('mu-dept').value=u.dept||'';}
     else if(u.role==='doctor'){document.getElementById('mu-doc-name').value=u.name||'';document.getElementById('mu-specialty').value=u.specialty||'';}
+    else if(u.role==='security'){document.getElementById('mu-sec-name').value=u.name||'';}
     else{document.getElementById('mu-adm-name').value=u.name||'';}
   }
   document.getElementById('modal-user').classList.add('open');
@@ -831,6 +871,10 @@ function saveUser(){
     name=document.getElementById('mu-doc-name').value.trim();const specialty=document.getElementById('mu-specialty').value.trim();
     if(!name||!specialty||!user){errTxt.textContent='Complete nombre, especialidad y usuario.';errEl.classList.add('show');return;}
     if(muMode==='create'&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}extra={specialty};
+  } else if(muRole==='security'){
+    name=document.getElementById('mu-sec-name').value.trim();
+    if(!name||!user){errTxt.textContent='Complete nombre y usuario.';errEl.classList.add('show');return;}
+    if(muMode==='create'&&document.getElementById('mu-master').value!==MASTER_KEY){errTxt.textContent='Clave maestra incorrecta.';errEl.classList.add('show');return;}
   } else {
     name=document.getElementById('mu-adm-name').value.trim();
     if(!name||!user){errTxt.textContent='Complete nombre y usuario.';errEl.classList.add('show');return;}
@@ -854,8 +898,46 @@ function deleteUser(username){if(!confirm(`¿Eliminar al usuario "${username}"?`
 function renderUsersTable(){
   const users=getUsers();const tbody=document.getElementById('users-tbody');
   if(!users.length){tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-tertiary);">No hay usuarios registrados</td></tr>`;return;}
-  const label={employee:'Empleado',doctor:'Médico',admin:'Admin'};const pill={employee:'emp',doctor:'doc',admin:'adm'};
+  const label={employee:'Empleado',doctor:'Médico',admin:'Admin',security:'Seguridad'};const pill={employee:'emp',doctor:'doc',admin:'adm',security:'sec'};
   tbody.innerHTML=users.map((u,i)=>`<tr><td style="color:var(--text-tertiary);">${i+1}</td><td style="font-weight:500;">${u.name}</td><td><code style="font-size:12px;background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">${u.username}</code></td><td><span class="role-pill ${pill[u.role]||'emp'}">${label[u.role]||u.role}</span></td><td style="font-size:12px;color:var(--text-secondary);">${u.role==='doctor'?(u.specialty||'—'):u.role==='admin'?'Administrador':(u.dept+(u.cedula?' · '+u.cedula:''))}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="openUserModal('edit','${u.username}')"><i class="ti ti-edit" style="font-size:12px;"></i> Editar</button><button class="btn-del" onclick="deleteUser('${u.username}')"><i class="ti ti-trash" style="font-size:12px;"></i> Eliminar</button></td></tr>`).join('');
+}
+
+function changeSecDay(d){secDay+=d;renderSecAgenda();}
+
+function renderSecAgenda(){
+  const dateStr=todayStr(secDay);
+  const dayAppts=getAppts().filter(a=>a.date===dateStr).sort((a,b)=>a.time.localeCompare(b.time));
+  document.getElementById('sec-date-label').textContent=formatDateLong(dateStr);
+  document.getElementById('sec-nav-label').textContent=secDay===0?'Hoy':secDay===1?'Mañana':secDay===-1?'Ayer':formatDate(dateStr);
+  document.getElementById('sec-stat-total').textContent=dayAppts.length;
+  document.getElementById('sec-stat-pending').textContent=dayAppts.filter(a=>a.status==='pending'||a.status==='next').length;
+  document.getElementById('sec-stat-done').textContent=dayAppts.filter(a=>a.status==='done').length;
+  const container=document.getElementById('sec-agenda-container');
+  if(!dayAppts.length){
+    container.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>Sin citas para este día</div>`;
+    return;
+  }
+  const nowMin=new Date().getHours()*60+new Date().getMinutes();
+  let html=`<div class="agenda-head" style="grid-template-columns:70px 200px 120px 1fr 110px;">
+    <span>Hora</span><span>Paciente</span><span>Área</span><span>Motivo</span><span>Estado</span>
+  </div>`;
+  dayAppts.forEach((a,i)=>{
+    const apptMin=parseInt(a.time.split(':')[0])*60+parseInt(a.time.split(':')[1]);
+    const isNext=secDay===0&&(a.status==='pending'||a.status==='next')&&apptMin>=nowMin&&i===dayAppts.findIndex(x=>(x.status==='pending'||x.status==='next')&&(parseInt(x.time.split(':')[0])*60+parseInt(x.time.split(':')[1]))>=nowMin);
+    let badge='';
+    if(a.status==='done') badge=`<span class="badge badge-done"><i class="ti ti-check" style="font-size:11px;"></i> Atendido</span>`;
+    else if(a.status==='absent') badge=`<span class="badge badge-absent"><i class="ti ti-x" style="font-size:11px;"></i> Ausente</span>`;
+    else if(isNext) badge=`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`;
+    else badge=`<span class="badge badge-pending">Pendiente</span>`;
+    html+=`<div class="appt-row" style="grid-template-columns:70px 200px 120px 1fr 110px;">
+      <div class="appt-time">${to12h(a.time)}</div>
+      <div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.cedula||''}</p></div>
+      <div style="font-size:13px;padding-top:2px;font-weight:500;color:var(--text-primary);">${a.dept||'—'}</div>
+      <div class="appt-reason">${a.reason}</div>
+      <div class="appt-status">${badge}</div>
+    </div>`;
+  });
+  container.innerHTML=html;
 }
 
 function exportExcel(){
@@ -902,5 +984,37 @@ db.ref('.info/connected').on('value', snap => {
 
 document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
 </script>
+
+<!-- SEGURIDAD -->
+<div id="screen-security" class="screen">
+  <nav class="nav">
+    <div class="nav-logo"><i class="ti ti-heart-plus"></i><div><div class="nav-logo-main">MediCita</div><div class="nav-logo-sub">ByC Exportadores</div></div></div>
+    <div class="nav-user">
+      <span class="nav-role-badge sec"><i class="ti ti-shield-lock" style="font-size:11px;"></i> Seguridad</span>
+      <span style="font-size:13px;color:var(--text-secondary);" id="sec-name-label"></span>
+      <button class="btn-nav" onclick="logout()"><i class="ti ti-logout" style="font-size:13px;"></i> Salir</button>
+    </div>
+  </nav>
+  <div class="content-wide">
+    <div class="section-header">
+      <div>
+        <p class="section-title-lg">Control de acceso — Citas del día</p>
+        <p class="section-date" id="sec-date-label"></p>
+      </div>
+      <div class="date-nav">
+        <button onclick="changeSecDay(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="date-label" id="sec-nav-label"></span>
+        <button onclick="changeSecDay(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><p class="stat-label">Total del día</p><p class="stat-num" id="sec-stat-total">0</p></div>
+      <div class="stat-card"><p class="stat-label">Pendientes</p><p class="stat-num amber" id="sec-stat-pending">0</p></div>
+      <div class="stat-card"><p class="stat-label">Atendidos</p><p class="stat-num green" id="sec-stat-done">0</p></div>
+    </div>
+    <div class="agenda" id="sec-agenda-container"></div>
+  </div>
+</div>
+
 </body>
 </html>
