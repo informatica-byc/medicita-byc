@@ -215,6 +215,11 @@ const db = firebase.database();
   .btn-confirm{flex:2;height:40px;background:var(--green);border:none;border-radius:var(--radius-md);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;}
   .btn-confirm:hover{background:var(--green-dark);}
   .modal-divider{height:0.5px;background:var(--border-light);margin:1rem 0;}
+  .tipo-checks-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .tipo-check{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-primary);cursor:pointer;padding:7px 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);transition:all .15s;}
+  .tipo-check:hover{border-color:var(--blue);background:var(--blue-light);}
+  .tipo-check input{width:16px;height:16px;cursor:pointer;accent-color:var(--blue);margin:0;}
+  .tipo-check input:checked + span{font-weight:600;color:var(--blue);}
   .hint-text{font-size:11px;color:var(--text-tertiary);}
 </style>
 </head>
@@ -233,25 +238,81 @@ const db = firebase.database();
     <p class="modal-sub">Ingrese la descripción de lo realizado</p>
     <div class="modal-patient"><strong id="modal-patient-name"></strong><span id="modal-patient-detail"></span></div>
     <div style="margin-bottom:1rem;">
-      <label class="form-label" style="margin-bottom:6px;">Tipo de atención</label>
-      <select class="form-input" id="modal-tipo-atencion" style="height:40px;">
-        <option value="">Seleccionar...</option>
-        <option>Accidente laboral</option>
-        <option>Certificado</option>
-        <option>Consulta</option>
-        <option>Incapacidad</option>
-        <option>Otro</option>
-        <option>Referencia</option>
-        <option>Riesgo laboral</option>
-        <option>Seguimiento</option>
-        <option>Valoración</option>
-      </select>
+      <label class="form-label" style="margin-bottom:8px;">Tipo de atención <span style="color:var(--text-tertiary);font-size:11px;">— puede elegir varios</span></label>
+      <div class="tipo-checks-grid">
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Accidente laboral"> <span>Accidente laboral</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Certificado"> <span>Certificado</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Consulta"> <span>Consulta</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Incapacidad"> <span>Incapacidad</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Otro"> <span>Otro</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Referencia"> <span>Referencia</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Riesgo laboral"> <span>Riesgo laboral</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Seguimiento"> <span>Seguimiento</span></label>
+        <label class="tipo-check"><input type="checkbox" class="tipo-atencion-cb" value="Valoración"> <span>Valoración</span></label>
+      </div>
     </div>
     <label class="form-label" style="margin-bottom:6px;">Descripción / Diagnóstico</label>
     <textarea class="modal-textarea" id="modal-desc" placeholder="Ej. Lumbalgia leve. Ibuprofeno 400mg c/8h por 5 días..."></textarea>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-atention')">Cancelar</button>
       <button class="btn-confirm" onclick="confirmAtendido()"><i class="ti ti-circle-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL Asignar fecha/hora a solicitud -->
+<div class="modal-overlay" id="modal-asignar">
+  <div class="modal">
+    <p class="modal-title">Asignar fecha y hora</p>
+    <p class="modal-sub">Seleccione la fecha y hora disponible para esta cita</p>
+    <div class="modal-patient"><strong id="asig-patient-name"></strong><span id="asig-patient-detail"></span></div>
+    <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="asig-date"></div>
+    <div class="form-row">
+      <label class="form-label">Hora disponible</label>
+      <p id="asig-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p>
+      <div class="slots-grid" id="asig-slots-grid"></div>
+    </div>
+    <div class="error-msg" id="asig-error"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="asig-error-txt"></span></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-asignar')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmAsignar()"><i class="ti ti-calendar-check"></i> Asignar cita</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL Nueva cita (médico) -->
+<div class="modal-overlay" id="modal-nueva-cita">
+  <div class="modal" style="max-width:480px;">
+    <p class="modal-title">Agendar nueva cita</p>
+    <p class="modal-sub">Puede seleccionar un empleado registrado o escribir los datos manualmente</p>
+    <div class="form-row"><label class="form-label">Empleado registrado (opcional)</label>
+      <select class="form-input" id="nc-emp" onchange="fillNcEmpData()"><option value="">Seleccionar registrado...</option></select>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label class="form-label">Nombre</label><input class="form-input" id="nc-name" placeholder="Nombre del paciente"></div>
+      <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" id="nc-id" placeholder="Cédula"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label class="form-label">Departamento</label>
+        <select class="form-input" id="nc-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Exportaciones</option><option>Finanzas</option><option>Fincas</option><option>Operaciones</option><option>Planta</option><option>Producción</option><option>Recursos Humanos</option><option>TI</option><option>Ventas</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" id="nc-phone" placeholder="Teléfono"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Motivo</label>
+      <select class="form-input" id="nc-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Incapacidad</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select>
+    </div>
+    <div class="form-row"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="nc-notes" placeholder="Describa brevemente..."></textarea></div>
+    <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="nc-date"></div>
+    <div class="form-row"><label class="form-label">Hora disponible</label>
+      <p id="nc-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p>
+      <div class="slots-grid" id="nc-slots-grid"></div>
+    </div>
+    <div class="error-msg" id="nc-error"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="nc-error-txt"></span></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-nueva-cita')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmNuevaCita()"><i class="ti ti-calendar-check"></i> Agendar</button>
     </div>
   </div>
 </div>
@@ -401,7 +462,7 @@ const db = firebase.database();
   <div class="content">
     <div class="toast" id="toast"><i class="ti ti-circle-check"></i><span id="toast-msg"></span></div>
     <div class="page-card">
-      <p class="page-title">Nueva cita con el médico de empresa</p><p class="page-sub">Complete el formulario para reservar su turno</p>
+      <p class="page-title">Solicitar cita con el médico de empresa</p><p class="page-sub">Genere su solicitud. El médico asignará la fecha y hora disponible.</p>
       <div class="form-grid">
         <div class="form-row"><label class="form-label">Nombre completo</label><input class="form-input" id="f-name" readonly></div>
         <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" id="f-id" readonly></div>
@@ -414,9 +475,13 @@ const db = firebase.database();
         <select class="form-input" id="f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Incapacidad</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select>
       </div>
       <div class="form-row"><label class="form-label">Notas adicionales (opcional)</label><textarea class="form-input" id="f-notes" placeholder="Describa brevemente su situación..."></textarea></div>
-      <div class="form-row"><label class="form-label">Seleccionar fecha</label><input class="form-input" type="date" id="f-date"></div>
-      <div class="form-row"><label class="form-label">Hora disponible <span style="color:var(--text-tertiary);font-size:11px;">— tachado = ocupado</span></label><p id="slots-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p><div class="slots-grid" id="slots-grid"></div></div>
-      <button class="btn-primary" onclick="bookAppointment()" style="margin-top:1.25rem;"><i class="ti ti-calendar-check"></i> Confirmar cita</button>
+      <button class="btn-primary" onclick="bookAppointment()" style="margin-top:1.25rem;"><i class="ti ti-send"></i> Enviar solicitud</button>
+
+      <div style="margin-top:2rem;border-top:0.5px solid var(--border-light);padding-top:1.5rem;">
+        <p class="page-title" style="font-size:15px;">Mis solicitudes y citas</p>
+        <p class="page-sub" style="margin-bottom:1rem;">Estado de sus solicitudes</p>
+        <div id="emp-mis-citas"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -431,6 +496,7 @@ const db = firebase.database();
     <div class="section-header">
       <div><p class="section-title-lg">Agenda del día</p><p class="section-date" id="doc-date-label"></p></div>
       <div class="header-right">
+        <button class="btn-add" onclick="openNuevaCitaModal()"><i class="ti ti-calendar-plus"></i> Nueva cita</button>
         <button class="btn-excel" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:16px;"></i> Descargar Excel</button>
         <div class="date-nav"><button onclick="changeDocDay(-1)"><i class="ti ti-chevron-left"></i></button><span class="date-label" id="doc-nav-label"></span><button onclick="changeDocDay(1)"><i class="ti ti-chevron-right"></i></button></div>
       </div>
@@ -441,6 +507,13 @@ const db = firebase.database();
       <div class="stat-card"><p class="stat-label">Pendientes</p><p class="stat-num amber" id="doc-stat-pending">0</p></div>
     </div>
     <div class="agenda" id="doc-agenda-container"></div>
+
+    <div style="margin-top:2rem;">
+      <div class="section-header" style="margin-bottom:1rem;">
+        <div><p class="section-title-lg" style="font-size:16px;"><i class="ti ti-inbox" style="font-size:18px;vertical-align:-2px;color:var(--orange);"></i> Solicitudes pendientes de asignar</p><p class="section-date">Solicitudes enviadas por empleados sin fecha asignada</p></div>
+      </div>
+      <div class="agenda" id="doc-solicitudes-container"></div>
+    </div>
   </div>
 </div>
 
@@ -479,14 +552,18 @@ const db = firebase.database();
     <div class="tab-panel" id="apanel-cita">
       <div class="page-card">
         <p class="page-title">Agendar cita</p><p class="page-sub">El administrador puede agendar citas para cualquier empleado</p>
-        <div class="form-row"><label class="form-label">Empleado</label><select class="form-input" id="adm-f-emp" onchange="fillAdmEmpData()"><option value="">Seleccionar empleado...</option></select></div>
-        <div class="form-grid">
-          <div class="form-row"><label class="form-label">Nombre</label><input class="form-input" id="adm-f-name" readonly></div>
-          <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" id="adm-f-id" readonly></div>
+        <div class="form-row"><label class="form-label">Empleado registrado (opcional)</label><select class="form-input" id="adm-f-emp" onchange="fillAdmEmpData()"><option value="">Seleccionar empleado registrado...</option></select>
+          <p style="font-size:11px;color:var(--text-tertiary);margin-top:5px;">O escriba los datos manualmente abajo si no está registrado</p>
         </div>
         <div class="form-grid">
-          <div class="form-row"><label class="form-label">Departamento</label><input class="form-input" id="adm-f-dept" readonly></div>
-          <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" id="adm-f-phone" readonly></div>
+          <div class="form-row"><label class="form-label">Nombre</label><input class="form-input" id="adm-f-name" placeholder="Nombre del paciente"></div>
+          <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" id="adm-f-id" placeholder="Cédula"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-row"><label class="form-label">Departamento</label>
+            <select class="form-input" id="adm-f-dept"><option value="">Seleccionar...</option><option>Administrativo</option><option>Exportaciones</option><option>Finanzas</option><option>Fincas</option><option>Operaciones</option><option>Planta</option><option>Producción</option><option>Recursos Humanos</option><option>TI</option><option>Ventas</option></select>
+          </div>
+          <div class="form-row"><label class="form-label">Teléfono</label><input class="form-input" id="adm-f-phone" placeholder="Teléfono"></div>
         </div>
         <div class="form-row"><label class="form-label">Motivo</label><select class="form-input" id="adm-f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Incapacidad</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select></div>
         <div class="form-row"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="adm-f-notes" placeholder="Describa brevemente..."></textarea></div>
@@ -560,7 +637,7 @@ function refreshCurrentView(){
     const at = document.querySelector('.tab-btn.active')?.id;
     if(at==='atab-resumen') renderAdminResumen();
     else if(at==='atab-agenda') renderAdmAgenda();
-  } else if(currentUser.role==='employee') renderSlots();
+  } else if(currentUser.role==='employee') renderEmpCitas();
   else if(currentUser.role==='security') renderSecAgenda();
 }
 
@@ -634,7 +711,7 @@ function doLogin(){
     document.getElementById('f-dept').value=found.dept||'';
     document.getElementById('f-phone').value=found.phone||'';
     showScreen('screen-employee');
-    const t=todayStr();const el=document.getElementById('f-date');el.min=t;el.value=t;el.onchange=renderSlots;renderSlots();
+    renderEmpCitas();
   } else if(loginRole==='doctor'){
     document.getElementById('doc-name-label').textContent='Dr. '+found.name;
     docDay=0;showScreen('screen-doctor');renderDocAgenda();
@@ -682,39 +759,84 @@ function logout(){
 }
 
 // EMPLEADO
-function renderSlots(){
-  const date=document.getElementById('f-date').value;
-  const slots=getSlotsForDate(date);
-  const taken=getAppts().filter(a=>a.date===date).map(a=>a.time);
-  const grid=document.getElementById('slots-grid');grid.innerHTML='';
-  // Mostrar etiqueta de turno
-  const month=date?parseInt(date.split('-')[1]):new Date().getMonth()+1;
-  const turno=month%2!==0?'🌆 Turno de tarde (12:15 – 4:45 PM)':'🌅 Turno de mañana (8:15 – 11:45 AM)';
-  const label=document.getElementById('slots-turno-label');
-  if(label) label.textContent=turno;
-  if(selectedSlot&&!slots.includes(selectedSlot)) selectedSlot=null;
-  slots.forEach(s=>{const div=document.createElement('div');const isTaken=taken.includes(s);div.className='slot'+(isTaken?' taken':'')+(selectedSlot===s&&!isTaken?' selected':'');div.textContent=to12h(s);if(!isTaken)div.onclick=()=>{selectedSlot=s;renderSlots();};grid.appendChild(div);});
-}
+// (renderSlots eliminado - empleado ya no elige hora)
 function bookAppointment(){
-  const reason=document.getElementById('f-reason').value,notes=document.getElementById('f-notes').value.trim(),date=document.getElementById('f-date').value;
-  if(!reason||!date||!selectedSlot){alert('Seleccione motivo, fecha y horario.');return;}
-  saveAppt_fb({name:currentUser.name,dept:currentUser.dept||'',reason,notes,date,time:selectedSlot,status:'pending',cedula:currentUser.cedula||'',phone:currentUser.phone||'',doctorNote:''}).then(()=>{
-    const toast=document.getElementById('toast');document.getElementById('toast-msg').textContent=`Cita confirmada para el ${formatDate(date)} a las ${to12h(selectedSlot)}.`;
+  const reason=document.getElementById('f-reason').value,notes=document.getElementById('f-notes').value.trim();
+  if(!reason){alert('Seleccione el motivo de consulta.');return;}
+  saveAppt_fb({name:currentUser.name,dept:currentUser.dept||'',reason,notes,date:'',time:'',status:'solicitud',cedula:currentUser.cedula||'',phone:currentUser.phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
+    const toast=document.getElementById('toast');document.getElementById('toast-msg').textContent='Solicitud enviada. El médico le asignará fecha y hora.';
     toast.style.display='flex';setTimeout(()=>toast.style.display='none',5000);
-    document.getElementById('f-reason').value='';document.getElementById('f-notes').value='';selectedSlot=null;renderSlots();
+    document.getElementById('f-reason').value='';document.getElementById('f-notes').value='';
+    renderEmpCitas();
   });
+}
+
+function renderEmpCitas(){
+  const container=document.getElementById('emp-mis-citas');
+  if(!container)return;
+  const mis=getAppts().filter(a=>a.cedula===currentUser.cedula||a.name===currentUser.name);
+  if(!mis.length){
+    container.innerHTML=`<div class="empty-agenda" style="padding:1.5rem;"><i class="ti ti-calendar-off"></i>No tiene solicitudes ni citas</div>`;
+    return;
+  }
+  let html='';
+  mis.sort((a,b)=>{
+    if(!a.date&&b.date)return -1;
+    if(a.date&&!b.date)return 1;
+    return (b.date||'').localeCompare(a.date||'')||(a.time||'').localeCompare(b.time||'');
+  });
+  mis.forEach(a=>{
+    let estado='',color='';
+    if(a.status==='solicitud'){estado='Solicitud enviada — esperando asignación';color='background:#FAEEDA;color:#854F0B;';}
+    else if(a.status==='pending'||a.status==='next'){estado='Cita asignada';color='background:#E1F5EE;color:#0F6E56;';}
+    else if(a.status==='done'){estado='Atendida';color='background:#EAF3DE;color:#3B6D11;';}
+    else if(a.status==='absent'){estado='Ausente';color='background:#FCEBEB;color:#A32D2D;';}
+    const fechaHora=a.date?`${formatDate(a.date)} a las ${to12h(a.time)}`:'<em style="color:var(--text-tertiary);">Pendiente de asignar</em>';
+    html+=`<div style="border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px;background:var(--bg-primary);">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div>
+          <p style="font-size:14px;font-weight:600;">${a.reason}</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-top:3px;"><i class="ti ti-calendar" style="font-size:13px;vertical-align:-1px;"></i> ${fechaHora}</p>
+          ${a.notes?`<p style="font-size:12px;color:var(--text-tertiary);margin-top:3px;">${a.notes}</p>`:''}
+        </div>
+        <span style="font-size:11px;font-weight:600;padding:5px 11px;border-radius:99px;white-space:nowrap;${color}">${estado}</span>
+      </div>
+    </div>`;
+  });
+  container.innerHTML=html;
 }
 
 // MÉDICO
 function changeDocDay(d){docDay+=d;renderDocAgenda();}
 function renderDocAgenda(){
-  const dateStr=todayStr(docDay),dayAppts=getAppts().filter(a=>a.date===dateStr);
+  const dateStr=todayStr(docDay),dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud');
   document.getElementById('doc-date-label').textContent=formatDateLong(dateStr);
   document.getElementById('doc-nav-label').textContent=docDay===0?'Hoy':docDay===1?'Mañana':docDay===-1?'Ayer':formatDate(dateStr);
   document.getElementById('doc-stat-total').textContent=dayAppts.length;
   document.getElementById('doc-stat-done').textContent=dayAppts.filter(a=>a.status==='done').length;
   document.getElementById('doc-stat-pending').textContent=dayAppts.filter(a=>a.status==='pending'||a.status==='next').length;
   renderAgendaInto('doc-agenda-container',dayAppts,docDay);
+  renderSolicitudes();
+}
+
+function renderSolicitudes(){
+  const container=document.getElementById('doc-solicitudes-container');
+  if(!container)return;
+  const solicitudes=getAppts().filter(a=>a.status==='solicitud');
+  if(!solicitudes.length){
+    container.innerHTML=`<div class="empty-agenda"><i class="ti ti-inbox"></i>No hay solicitudes pendientes</div>`;
+    return;
+  }
+  let html=`<div class="agenda-head" style="grid-template-columns:200px 130px 1fr 130px;"><span>Paciente</span><span>Área</span><span>Motivo</span><span>Acción</span></div>`;
+  solicitudes.forEach(a=>{
+    html+=`<div class="appt-row" style="grid-template-columns:200px 130px 1fr 130px;">
+      <div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.cedula||''}</p></div>
+      <div style="font-size:13px;padding-top:2px;font-weight:500;">${a.dept||'—'}</div>
+      <div class="appt-reason">${a.reason}${a.notes?`<br><span style="font-size:11px;color:var(--text-tertiary);">${a.notes}</span>`:''}</div>
+      <div><button class="btn-add" onclick="openAsignarModal('${a.id}')" style="height:30px;"><i class="ti ti-calendar-plus"></i> Asignar</button></div>
+    </div>`;
+  });
+  container.innerHTML=html;
 }
 
 // ADMIN
@@ -726,12 +848,14 @@ function renderAdminResumen(){
   const users=getUsers();
   const emps=users.filter(u=>u.role==='employee').length,docs=users.filter(u=>u.role==='doctor').length,adms=users.filter(u=>u.role==='admin').length;
   const pending=getAppts().filter(a=>a.status==='pending'||a.status==='next').length;
+  const solicitudes=getAppts().filter(a=>a.status==='solicitud').length;
   document.getElementById('adm-stats-cards').innerHTML=`
     <div class="admin-stat"><div class="admin-stat-icon green"><i class="ti ti-users"></i></div><div><p class="admin-stat-label">Empleados</p><p class="admin-stat-num">${emps}</p></div></div>
     <div class="admin-stat"><div class="admin-stat-icon blue"><i class="ti ti-stethoscope"></i></div><div><p class="admin-stat-label">Médicos</p><p class="admin-stat-num">${docs}</p></div></div>
     <div class="admin-stat"><div class="admin-stat-icon purple"><i class="ti ti-shield-check"></i></div><div><p class="admin-stat-label">Administradores</p><p class="admin-stat-num">${adms}</p></div></div>
-    <div class="admin-stat"><div class="admin-stat-icon amber"><i class="ti ti-calendar-clock"></i></div><div><p class="admin-stat-label">Citas pendientes</p><p class="admin-stat-num">${pending}</p></div></div>`;
-  const upcoming=getAppts().filter(a=>a.date>=todayStr()&&(a.status==='pending'||a.status==='next')).slice(0,5);
+    <div class="admin-stat"><div class="admin-stat-icon amber"><i class="ti ti-calendar-clock"></i></div><div><p class="admin-stat-label">Citas pendientes</p><p class="admin-stat-num">${pending}</p></div></div>
+    <div class="admin-stat"><div class="admin-stat-icon" style="background:var(--orange-light);color:var(--orange);"><i class="ti ti-inbox"></i></div><div><p class="admin-stat-label">Solicitudes sin asignar</p><p class="admin-stat-num">${solicitudes}</p></div></div>`;
+  const upcoming=getAppts().filter(a=>a.date&&a.date>=todayStr()&&(a.status==='pending'||a.status==='next')).slice(0,5);
   const c=document.getElementById('adm-upcoming-container');
   if(!upcoming.length){c.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>No hay citas próximas</div>`;return;}
   let html=`<div class="agenda-head"><span>Hora</span><span>Paciente</span><span>Motivo</span><span>Fecha</span></div>`;
@@ -740,7 +864,7 @@ function renderAdminResumen(){
 }
 function changeAdmDay(d){admDay+=d;renderAdmAgenda();}
 function renderAdmAgenda(){
-  const dateStr=todayStr(admDay),dayAppts=getAppts().filter(a=>a.date===dateStr);
+  const dateStr=todayStr(admDay),dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud');
   document.getElementById('adm-date-label').textContent=formatDateLong(dateStr);
   document.getElementById('adm-nav-label').textContent=admDay===0?'Hoy':admDay===1?'Mañana':admDay===-1?'Ayer':formatDate(dateStr);
   document.getElementById('adm-stat-total').textContent=dayAppts.length;
@@ -751,7 +875,8 @@ function renderAdmAgenda(){
 function renderAdmCitaForm(){
   const emps=getUsers().filter(u=>u.role==='employee');
   document.getElementById('adm-f-emp').innerHTML='<option value="">Seleccionar empleado...</option>'+emps.map(u=>`<option value="${u.username}">${u.name} (${u.dept||'—'})</option>`).join('');
-  ['adm-f-name','adm-f-id','adm-f-dept','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
+  ['adm-f-name','adm-f-id','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('adm-f-dept').value='';
   document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
   admSelectedSlot=null;const t=todayStr();const el=document.getElementById('adm-f-date');el.min=t;el.value=t;el.onchange=renderAdmSlots;renderAdmSlots();
 }
@@ -773,13 +898,19 @@ function renderAdmSlots(){
   slots.forEach(s=>{const div=document.createElement('div');const isTaken=taken.includes(s);div.className='slot'+(isTaken?' taken':'')+(admSelectedSlot===s&&!isTaken?' selected':'');div.textContent=to12h(s);if(!isTaken)div.onclick=()=>{admSelectedSlot=s;renderAdmSlots();};grid.appendChild(div);});
 }
 function admBookAppointment(){
-  const empUser=document.getElementById('adm-f-emp').value,reason=document.getElementById('adm-f-reason').value,notes=document.getElementById('adm-f-notes').value.trim(),date=document.getElementById('adm-f-date').value;
-  if(!empUser||!reason||!date||!admSelectedSlot){alert('Seleccione empleado, motivo, fecha y horario.');return;}
-  const u=usersCache[empUser];if(!u)return;
-  saveAppt_fb({name:u.name,dept:u.dept||'',reason,notes,date,time:admSelectedSlot,status:'pending',cedula:u.cedula||'',phone:u.phone||'',doctorNote:''}).then(()=>{
-    alert(`Cita agendada para ${u.name} el ${formatDate(date)} a las ${to12h(admSelectedSlot)}.`);
+  const name=document.getElementById('adm-f-name').value.trim();
+  const cedula=document.getElementById('adm-f-id').value.trim();
+  const dept=document.getElementById('adm-f-dept').value;
+  const phone=document.getElementById('adm-f-phone').value.trim();
+  const reason=document.getElementById('adm-f-reason').value;
+  const notes=document.getElementById('adm-f-notes').value.trim();
+  const date=document.getElementById('adm-f-date').value;
+  if(!name||!reason||!date||!admSelectedSlot){alert('Complete al menos el nombre, motivo, fecha y horario.');return;}
+  saveAppt_fb({name,dept:dept||'',reason,notes,date,time:admSelectedSlot,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
+    alert(`Cita agendada para ${name} el ${formatDate(date)} a las ${to12h(admSelectedSlot)}.`);
     document.getElementById('adm-f-emp').value='';document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
-    ['adm-f-name','adm-f-id','adm-f-dept','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
+    ['adm-f-name','adm-f-id','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('adm-f-dept').value='';
     admSelectedSlot=null;renderAdmSlots();
   });
 }
@@ -808,12 +939,15 @@ function openAtentionModal(id){
   document.getElementById('modal-patient-name').textContent=a.name;
   document.getElementById('modal-patient-detail').textContent=`${a.dept} · ${a.cedula} · ${to12h(a.time)} — ${a.reason}`;
   document.getElementById('modal-desc').value=a.doctorNote||'';
-  document.getElementById('modal-tipo-atencion').value=a.tipoAtencion||'';
+  // Marcar checkboxes de tipo de atención
+  const tipos=(a.tipoAtencion||'').split(', ').filter(Boolean);
+  document.querySelectorAll('.tipo-atencion-cb').forEach(cb=>{cb.checked=tipos.includes(cb.value);});
   document.getElementById('modal-atention').classList.add('open');
   setTimeout(()=>document.getElementById('modal-desc').focus(),100);
 }
 function confirmAtendido(){
-  const tipoAtencion=document.getElementById('modal-tipo-atencion').value;
+  const tipos=Array.from(document.querySelectorAll('.tipo-atencion-cb:checked')).map(cb=>cb.value);
+  const tipoAtencion=tipos.join(', ');
   const doctorNote=document.getElementById('modal-desc').value.trim();
   updateAppt_fb(pendingAtendidoId,{status:'done',doctorNote,tipoAtencion});
   closeModal('modal-atention');
@@ -902,11 +1036,114 @@ function renderUsersTable(){
   tbody.innerHTML=users.map((u,i)=>`<tr><td style="color:var(--text-tertiary);">${i+1}</td><td style="font-weight:500;">${u.name}</td><td><code style="font-size:12px;background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">${u.username}</code></td><td><span class="role-pill ${pill[u.role]||'emp'}">${label[u.role]||u.role}</span></td><td style="font-size:12px;color:var(--text-secondary);">${u.role==='doctor'?(u.specialty||'—'):u.role==='admin'?'Administrador':(u.dept+(u.cedula?' · '+u.cedula:''))}</td><td style="white-space:nowrap;"><button class="btn-edit" onclick="openUserModal('edit','${u.username}')"><i class="ti ti-edit" style="font-size:12px;"></i> Editar</button><button class="btn-del" onclick="deleteUser('${u.username}')"><i class="ti ti-trash" style="font-size:12px;"></i> Eliminar</button></td></tr>`).join('');
 }
 
+let pendingAsignarId=null, asigSelectedSlot=null;
+
+function openAsignarModal(id){
+  const a=appointmentsCache[id];if(!a)return;
+  pendingAsignarId=id;
+  asigSelectedSlot=null;
+  document.getElementById('asig-patient-name').textContent=a.name;
+  document.getElementById('asig-patient-detail').textContent=`${a.dept||''} · ${a.cedula||''} — ${a.reason}`;
+  document.getElementById('asig-error').classList.remove('show');
+  const t=todayStr();
+  const el=document.getElementById('asig-date');
+  el.min=t;el.value=t;el.onchange=renderAsigSlots;
+  renderAsigSlots();
+  document.getElementById('modal-asignar').classList.add('open');
+}
+
+function renderAsigSlots(){
+  const date=document.getElementById('asig-date').value;
+  const slots=getSlotsForDate(date);
+  const taken=getAppts().filter(a=>a.date===date&&a.time).map(a=>a.time);
+  const grid=document.getElementById('asig-slots-grid');grid.innerHTML='';
+  const month=date?parseInt(date.split('-')[1]):new Date().getMonth()+1;
+  const turno=month%2!==0?'🌆 Turno de tarde (12:15 – 4:45 PM)':'🌅 Turno de mañana (8:15 – 11:45 AM)';
+  document.getElementById('asig-turno-label').textContent=turno;
+  if(asigSelectedSlot&&!slots.includes(asigSelectedSlot))asigSelectedSlot=null;
+  slots.forEach(s=>{
+    const div=document.createElement('div');
+    const isTaken=taken.includes(s);
+    div.className='slot'+(isTaken?' taken':'')+(asigSelectedSlot===s&&!isTaken?' selected':'');
+    div.textContent=to12h(s);
+    if(!isTaken)div.onclick=()=>{asigSelectedSlot=s;renderAsigSlots();};
+    grid.appendChild(div);
+  });
+}
+
+function confirmAsignar(){
+  const date=document.getElementById('asig-date').value;
+  const errEl=document.getElementById('asig-error'),errTxt=document.getElementById('asig-error-txt');
+  errEl.classList.remove('show');
+  if(!date||!asigSelectedSlot){errTxt.textContent='Seleccione fecha y hora.';errEl.classList.add('show');return;}
+  updateAppt_fb(pendingAsignarId,{date,time:asigSelectedSlot,status:'pending'}).then(()=>{
+    closeModal('modal-asignar');
+  });
+}
+
+let ncSelectedSlot=null;
+
+function openNuevaCitaModal(){
+  ncSelectedSlot=null;
+  document.getElementById('nc-error').classList.remove('show');
+  const emps=getUsers().filter(u=>u.role==='employee');
+  document.getElementById('nc-emp').innerHTML='<option value="">Seleccionar registrado...</option>'+emps.map(u=>`<option value="${u.username}">${u.name} (${u.dept||'—'})</option>`).join('');
+  ['nc-name','nc-id','nc-phone','nc-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nc-dept').value='';document.getElementById('nc-reason').value='';document.getElementById('nc-emp').value='';
+  const t=todayStr();const el=document.getElementById('nc-date');el.min=t;el.value=t;el.onchange=renderNcSlots;
+  renderNcSlots();
+  document.getElementById('modal-nueva-cita').classList.add('open');
+}
+
+function fillNcEmpData(){
+  const u=usersCache[document.getElementById('nc-emp').value];
+  if(u){
+    document.getElementById('nc-name').value=u.name||'';
+    document.getElementById('nc-id').value=u.cedula||'';
+    document.getElementById('nc-dept').value=u.dept||'';
+    document.getElementById('nc-phone').value=u.phone||'';
+  }
+}
+
+function renderNcSlots(){
+  const date=document.getElementById('nc-date').value;
+  const slots=getSlotsForDate(date);
+  const taken=getAppts().filter(a=>a.date===date&&a.time).map(a=>a.time);
+  const grid=document.getElementById('nc-slots-grid');grid.innerHTML='';
+  const month=date?parseInt(date.split('-')[1]):new Date().getMonth()+1;
+  document.getElementById('nc-turno-label').textContent=month%2!==0?'🌆 Turno de tarde (12:15 – 4:45 PM)':'🌅 Turno de mañana (8:15 – 11:45 AM)';
+  if(ncSelectedSlot&&!slots.includes(ncSelectedSlot))ncSelectedSlot=null;
+  slots.forEach(s=>{
+    const div=document.createElement('div');
+    const isTaken=taken.includes(s);
+    div.className='slot'+(isTaken?' taken':'')+(ncSelectedSlot===s&&!isTaken?' selected':'');
+    div.textContent=to12h(s);
+    if(!isTaken)div.onclick=()=>{ncSelectedSlot=s;renderNcSlots();};
+    grid.appendChild(div);
+  });
+}
+
+function confirmNuevaCita(){
+  const name=document.getElementById('nc-name').value.trim();
+  const cedula=document.getElementById('nc-id').value.trim();
+  const dept=document.getElementById('nc-dept').value;
+  const phone=document.getElementById('nc-phone').value.trim();
+  const reason=document.getElementById('nc-reason').value;
+  const notes=document.getElementById('nc-notes').value.trim();
+  const date=document.getElementById('nc-date').value;
+  const errEl=document.getElementById('nc-error'),errTxt=document.getElementById('nc-error-txt');
+  errEl.classList.remove('show');
+  if(!name||!reason||!date||!ncSelectedSlot){errTxt.textContent='Complete nombre, motivo, fecha y hora.';errEl.classList.add('show');return;}
+  saveAppt_fb({name,dept:dept||'',reason,notes,date,time:ncSelectedSlot,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:''}).then(()=>{
+    closeModal('modal-nueva-cita');
+  });
+}
+
 function changeSecDay(d){secDay+=d;renderSecAgenda();}
 
 function renderSecAgenda(){
   const dateStr=todayStr(secDay);
-  const dayAppts=getAppts().filter(a=>a.date===dateStr).sort((a,b)=>a.time.localeCompare(b.time));
+  const dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud').sort((a,b)=>a.time.localeCompare(b.time));
   document.getElementById('sec-date-label').textContent=formatDateLong(dateStr);
   document.getElementById('sec-nav-label').textContent=secDay===0?'Hoy':secDay===1?'Mañana':secDay===-1?'Ayer':formatDate(dateStr);
   document.getElementById('sec-stat-total').textContent=dayAppts.length;
