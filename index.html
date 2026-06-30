@@ -503,7 +503,8 @@ const db = firebase.database();
       <div class="header-right">
         <button class="btn-add" onclick="openNuevaCitaModal()"><i class="ti ti-calendar-plus"></i> Nueva cita</button>
         <button class="btn-excel" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:16px;"></i> Descargar Excel</button>
-        <div class="date-nav"><button onclick="changeDocDay(-1)"><i class="ti ti-chevron-left"></i></button><span class="date-label" id="doc-nav-label"></span><button onclick="changeDocDay(1)"><i class="ti ti-chevron-right"></i></button></div>
+        <button class="btn-excel" id="doc-vista-btn" onclick="toggleDocVista()" style="border-color:var(--blue);color:var(--blue);"><i class="ti ti-list" style="font-size:16px;"></i> Ver todas</button>
+        <div class="date-nav" id="doc-date-nav"><button onclick="changeDocDay(-1)"><i class="ti ti-chevron-left"></i></button><span class="date-label" id="doc-nav-label"></span><button onclick="changeDocDay(1)"><i class="ti ti-chevron-right"></i></button></div>
       </div>
     </div>
     <div class="stats-row">
@@ -544,7 +545,8 @@ const db = firebase.database();
         <div><p class="section-title-lg">Agenda del día</p><p class="section-date" id="adm-date-label"></p></div>
         <div class="header-right">
           <button class="btn-excel" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:16px;"></i> Descargar Excel</button>
-          <div class="date-nav"><button onclick="changeAdmDay(-1)"><i class="ti ti-chevron-left"></i></button><span class="date-label" id="adm-nav-label"></span><button onclick="changeAdmDay(1)"><i class="ti ti-chevron-right"></i></button></div>
+          <button class="btn-excel" id="adm-vista-btn" onclick="toggleAdmVista()" style="border-color:var(--blue);color:var(--blue);"><i class="ti ti-list" style="font-size:16px;"></i> Ver todas</button>
+          <div class="date-nav" id="adm-date-nav"><button onclick="changeAdmDay(-1)"><i class="ti ti-chevron-left"></i></button><span class="date-label" id="adm-nav-label"></span><button onclick="changeAdmDay(1)"><i class="ti ti-chevron-right"></i></button></div>
         </div>
       </div>
       <div class="stats-row">
@@ -619,6 +621,7 @@ const SLOTS = getSlotsForDate(null);
 let currentUser=null, loginRole='employee';
 let selectedSlot=null, admSelectedSlot=null;
 let docDay=0, admDay=0, secDay=0, pendingAtendidoId=null;
+let docVistaTodas=false, admVistaTodas=false;
 let muMode='create', muEditUsername=null, muRole='employee', muOrigRole='employee';
 let usersCache={}, appointmentsCache={};
 
@@ -738,9 +741,14 @@ function enterProfile(found, animate){
     renderEmpCitas();
   } else if(role==='doctor'){
     document.getElementById('doc-name-label').textContent='Dr. '+found.name;
-    docDay=0;
+    docDay=0;docVistaTodas=false;
     if(animate){showScreen('screen-doctor');}else{showScreenInstant('screen-doctor');}
-    renderDocAgenda();
+    // Si no hay citas hoy pero sí en otras fechas, mostrar todas automáticamente
+    const hoy=todayStr();
+    const hayHoy=getAppts().some(a=>a.date===hoy&&a.status!=='solicitud'&&a.status!=='cancelled');
+    const hayOtras=getAppts().some(a=>a.date&&a.date!==hoy&&a.status!=='solicitud'&&a.status!=='cancelled');
+    if(!hayHoy&&hayOtras){ setTimeout(()=>toggleDocVista(),animate?450:50); }
+    else { renderDocAgenda(); }
   } else if(role==='security'){
     document.getElementById('sec-name-label').textContent=found.name;
     secDay=0;
@@ -748,7 +756,7 @@ function enterProfile(found, animate){
     renderSecAgenda();
   } else {
     document.getElementById('adm-name-label').textContent=found.name;
-    admDay=0;
+    admDay=0;admVistaTodas=false;
     if(animate){showScreen('screen-admin');}else{showScreenInstant('screen-admin');}
     switchAdminTab('resumen');
   }
@@ -852,14 +860,34 @@ function renderEmpCitas(){
 
 // MÉDICO
 function changeDocDay(d){docDay+=d;renderDocAgenda();}
+function toggleDocVista(){
+  docVistaTodas=!docVistaTodas;
+  const btn=document.getElementById('doc-vista-btn');
+  const nav=document.getElementById('doc-date-nav');
+  if(docVistaTodas){
+    btn.innerHTML='<i class="ti ti-calendar" style="font-size:16px;"></i> Ver por día';
+    nav.style.display='none';
+  } else {
+    btn.innerHTML='<i class="ti ti-list" style="font-size:16px;"></i> Ver todas';
+    nav.style.display='flex';
+  }
+  renderDocAgenda();
+}
 function renderDocAgenda(){
-  const dateStr=todayStr(docDay),dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud'&&a.status!=='cancelled');
-  document.getElementById('doc-date-label').textContent=formatDateLong(dateStr);
-  document.getElementById('doc-nav-label').textContent=docDay===0?'Hoy':docDay===1?'Mañana':docDay===-1?'Ayer':formatDate(dateStr);
-  document.getElementById('doc-stat-total').textContent=dayAppts.length;
-  document.getElementById('doc-stat-done').textContent=dayAppts.filter(a=>a.status==='done').length;
-  document.getElementById('doc-stat-pending').textContent=dayAppts.filter(a=>a.status==='pending'||a.status==='next').length;
-  renderAgendaInto('doc-agenda-container',dayAppts,docDay);
+  let appts;
+  if(docVistaTodas){
+    appts=getAppts().filter(a=>a.date&&a.status!=='solicitud'&&a.status!=='cancelled');
+    document.getElementById('doc-date-label').textContent='Todas las citas asignadas';
+  } else {
+    const dateStr=todayStr(docDay);
+    appts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud'&&a.status!=='cancelled');
+    document.getElementById('doc-date-label').textContent=formatDateLong(dateStr);
+    document.getElementById('doc-nav-label').textContent=docDay===0?'Hoy':docDay===1?'Mañana':docDay===-1?'Ayer':formatDate(dateStr);
+  }
+  document.getElementById('doc-stat-total').textContent=appts.length;
+  document.getElementById('doc-stat-done').textContent=appts.filter(a=>a.status==='done').length;
+  document.getElementById('doc-stat-pending').textContent=appts.filter(a=>a.status==='pending'||a.status==='next').length;
+  renderAgendaInto('doc-agenda-container',appts,docVistaTodas?null:docDay);
   renderSolicitudes();
 }
 
@@ -911,14 +939,34 @@ function renderAdminResumen(){
   c.innerHTML=html;
 }
 function changeAdmDay(d){admDay+=d;renderAdmAgenda();}
+function toggleAdmVista(){
+  admVistaTodas=!admVistaTodas;
+  const btn=document.getElementById('adm-vista-btn');
+  const nav=document.getElementById('adm-date-nav');
+  if(admVistaTodas){
+    btn.innerHTML='<i class="ti ti-calendar" style="font-size:16px;"></i> Ver por día';
+    nav.style.display='none';
+  } else {
+    btn.innerHTML='<i class="ti ti-list" style="font-size:16px;"></i> Ver todas';
+    nav.style.display='flex';
+  }
+  renderAdmAgenda();
+}
 function renderAdmAgenda(){
-  const dateStr=todayStr(admDay),dayAppts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud');
-  document.getElementById('adm-date-label').textContent=formatDateLong(dateStr);
-  document.getElementById('adm-nav-label').textContent=admDay===0?'Hoy':admDay===1?'Mañana':admDay===-1?'Ayer':formatDate(dateStr);
-  document.getElementById('adm-stat-total').textContent=dayAppts.length;
-  document.getElementById('adm-stat-done').textContent=dayAppts.filter(a=>a.status==='done').length;
-  document.getElementById('adm-stat-pending').textContent=dayAppts.filter(a=>a.status==='pending'||a.status==='next').length;
-  renderAgendaInto('adm-agenda-container',dayAppts,admDay);
+  let appts;
+  if(admVistaTodas){
+    appts=getAppts().filter(a=>a.date&&a.status!=='solicitud');
+    document.getElementById('adm-date-label').textContent='Todas las citas (historial completo)';
+  } else {
+    const dateStr=todayStr(admDay);
+    appts=getAppts().filter(a=>a.date===dateStr&&a.status!=='solicitud');
+    document.getElementById('adm-date-label').textContent=formatDateLong(dateStr);
+    document.getElementById('adm-nav-label').textContent=admDay===0?'Hoy':admDay===1?'Mañana':admDay===-1?'Ayer':formatDate(dateStr);
+  }
+  document.getElementById('adm-stat-total').textContent=appts.length;
+  document.getElementById('adm-stat-done').textContent=appts.filter(a=>a.status==='done').length;
+  document.getElementById('adm-stat-pending').textContent=appts.filter(a=>a.status==='pending'||a.status==='next').length;
+  renderAgendaInto('adm-agenda-container',appts,admVistaTodas?null:admDay);
 }
 function renderAdmCitaForm(){
   const emps=getUsers().filter(u=>u.role==='employee');
@@ -963,7 +1011,8 @@ function admBookAppointment(){
 // AGENDA COMPARTIDA
 function renderAgendaInto(containerId,dayAppts,dayOffset){
   const container=document.getElementById(containerId);
-  if(!dayAppts.length){container.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>Sin citas para este día</div>`;return;}
+  const msgVacio=dayOffset===null?'No hay citas registradas':'Sin citas para este día';
+  if(!dayAppts.length){container.innerHTML=`<div class="empty-agenda"><i class="ti ti-calendar-off"></i>${msgVacio}</div>`;return;}
   const nowMin=new Date().getHours()*60+new Date().getMinutes();
   let html=`<div class="agenda-head" style="grid-template-columns:120px 70px 180px 1fr 200px;"><span>Fecha</span><span>Hora</span><span>Paciente</span><span>Motivo</span><span>Estado</span></div>`;
   dayAppts.forEach((a,i)=>{
