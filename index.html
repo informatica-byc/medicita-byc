@@ -747,10 +747,14 @@ const db = firebase.database();
     <div class="tab-panel" id="apanel-colaboradores">
       <div class="page-card">
         <div class="table-header">
-          <p class="table-title"><i class="ti ti-address-book" style="font-size:18px;color:var(--teal);"></i> Colaboradores guardados</p>
-          <button class="btn-del" id="col-del-btn" onclick="eliminarColaboradoresSeleccionados()" style="display:none;"><i class="ti ti-trash"></i> Eliminar seleccionados (<span id="col-sel-count">0</span>)</button>
+          <p class="table-title"><i class="ti ti-address-book" style="font-size:18px;color:var(--teal);"></i> Colaboradores guardados <span id="col-total" style="font-size:13px;font-weight:400;color:var(--text-tertiary);"></span></p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-add" onclick="document.getElementById('col-import-file').click()" style="background:var(--teal);"><i class="ti ti-file-import"></i> Importar Excel</button>
+            <button class="btn-del" id="col-del-btn" onclick="eliminarColaboradoresSeleccionados()" style="display:none;"><i class="ti ti-trash"></i> Eliminar seleccionados (<span id="col-sel-count">0</span>)</button>
+          </div>
+          <input type="file" id="col-import-file" accept=".xlsx,.xls" style="display:none;" onchange="importarColaboradoresExcel(event)">
         </div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">Lista de colaboradores agregados manualmente en las citas (no tienen acceso al sistema). Puede seleccionar y eliminar los que ya no necesite.</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">Lista de colaboradores (no tienen acceso al sistema). Puede importar desde Excel (columnas: Nombre, Cédula, Área, Teléfono), seleccionar y eliminar los que ya no necesite.</p>
         <div class="form-row" style="margin-bottom:1rem;">
           <div style="position:relative;max-width:400px;">
             <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);font-size:16px;"></i>
@@ -1727,11 +1731,62 @@ function getKpiData(){
 
 let colSeleccionados=new Set();
 
+function importarColaboradoresExcel(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      if(rows.length<2){alert('El archivo no tiene datos.');return;}
+      // Detectar columnas por encabezado
+      const header=rows[0].map(h=>(h||'').toString().toLowerCase().trim());
+      const idxNombre=header.findIndex(h=>h.includes('nombre'));
+      const idxCedula=header.findIndex(h=>h.includes('cédula')||h.includes('cedula'));
+      const idxArea=header.findIndex(h=>h.includes('área')||h.includes('area')||h.includes('depart'));
+      const idxTel=header.findIndex(h=>h.includes('tel'));
+      if(idxNombre<0){alert('No se encontró la columna "Nombre".');return;}
+
+      const existentesCedulas=new Set(getContactos().map(c=>(c.cedula||'').toString()));
+      const existentesUsers=new Set(getUsers().filter(u=>u.role==='employee').map(u=>(u.cedula||'').toString()));
+      let nuevos=0, duplicados=0;
+      const updates={};
+      rows.slice(1).forEach((r,i)=>{
+        const name=(r[idxNombre]||'').toString().trim();
+        if(!name)return;
+        const cedula=idxCedula>=0?(r[idxCedula]||'').toString().trim():'';
+        const dept=idxArea>=0?(r[idxArea]||'').toString().trim():'';
+        const phone=idxTel>=0?(r[idxTel]||'').toString().trim():'';
+        // Evitar duplicados por cédula
+        if(cedula&&(existentesCedulas.has(cedula)||existentesUsers.has(cedula))){duplicados++;return;}
+        if(cedula)existentesCedulas.add(cedula);
+        const id='c'+Date.now()+'_'+i+Math.floor(Math.random()*1000);
+        updates[id]={id,name,cedula,dept,phone,creado:new Date().toISOString()};
+        nuevos++;
+      });
+      if(nuevos===0){alert('No hay colaboradores nuevos para importar.'+(duplicados?' ('+duplicados+' ya existían)':''));event.target.value='';return;}
+      if(!confirm(`Se importarán ${nuevos} colaborador${nuevos>1?'es':''}.${duplicados?' ('+duplicados+' ya existían y se omitirán)':''}\n\n¿Continuar?`)){event.target.value='';return;}
+      // Subir todos a Firebase en un solo update por lotes
+      contactsRef.update(updates).then(()=>{
+        alert(`✓ ${nuevos} colaboradores importados correctamente.`);
+        event.target.value='';
+        renderColaboradores();
+      }).catch(err=>{alert('Error al importar: '+err.message);event.target.value='';});
+    }catch(err){alert('Error al leer el archivo: '+err.message);event.target.value='';}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function renderColaboradores(){
   const tbody=document.getElementById('col-tbody');
   if(!tbody)return;
   const q=(document.getElementById('col-search')?.value||'').toLowerCase().trim();
   let contactos=getContactos();
+  const totalEl=document.getElementById('col-total');
+  if(totalEl)totalEl.textContent=contactos.length?'('+contactos.length+' en total)':'';
   if(q){ contactos=contactos.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.cedula||'').toLowerCase().includes(q)); }
   contactos.sort((a,b)=>a.name.localeCompare(b.name));
   if(!contactos.length){
