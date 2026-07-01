@@ -72,6 +72,7 @@ const db = firebase.database();
   @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
   @keyframes fadeOut{from{opacity:1;}to{opacity:0;}}
   .center-wrap{display:flex;align-items:center;justify-content:center;flex:1;padding:2rem;}
+  @media(max-width:480px){.center-wrap{padding:1rem 0.75rem;align-items:flex-start;padding-top:1.5rem;}}
   .auth-card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
   .auth-title{font-size:20px;font-weight:600;margin-bottom:4px;}
   .auth-sub{font-size:13px;color:var(--text-secondary);margin-bottom:1.5rem;}
@@ -150,6 +151,7 @@ const db = firebase.database();
   .stat-num.green{color:var(--green);}
   .stat-num.amber{color:#BA7517;}
   .agenda{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);overflow:hidden;}
+  @media(max-width:768px){.agenda{overflow-x:auto;-webkit-overflow-scrolling:touch;}}
   .agenda-head{display:grid;grid-template-columns:70px 180px 1fr 200px;padding:10px 16px;background:var(--bg-secondary);border-bottom:0.5px solid var(--border-light);font-size:12px;font-weight:600;color:var(--text-secondary);gap:8px;}
   .appt-row{display:grid;grid-template-columns:70px 180px 1fr 200px;padding:14px 16px;border-bottom:0.5px solid var(--border-light);align-items:start;transition:background .12s;gap:8px;}
   .appt-row:last-child{border-bottom:none;}
@@ -232,6 +234,116 @@ const db = firebase.database();
   .tipo-check input{width:16px;height:16px;cursor:pointer;accent-color:var(--blue);margin:0;}
   .tipo-check input:checked + span{font-weight:600;color:var(--blue);}
   .hint-text{font-size:11px;color:var(--text-tertiary);}
+
+  /* ═══════════════════════════════════════════
+     RESPONSIVE — Tablet y Teléfono
+     ═══════════════════════════════════════════ */
+
+  /* ── TABLET (≤ 1024px) ── */
+  @media (max-width:1024px){
+    .content-wide{padding:1.25rem;max-width:100%;}
+    .content{padding:1.25rem;}
+    .admin-stats{grid-template-columns:repeat(3,1fr)!important;}
+    #kpi-cards{grid-template-columns:repeat(3,1fr)!important;}
+    /* Gráficos KPI en 1 columna en tablet */
+    #apanel-kpis > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;}
+  }
+
+  /* ── TABLET PEQUEÑA / MÓVIL GRANDE (≤ 768px) ── */
+  @media (max-width:768px){
+    .nav{padding:0 1rem;height:52px;}
+    .nav-logo-main{font-size:15px;}
+    .nav-logo-sub{font-size:9px;}
+    .nav-user{gap:6px;margin-left:0.5rem;padding-left:0.5rem;}
+    .nav-user span[id$="-name-label"]{display:none;} /* ocultar nombre largo en móvil */
+    .btn-nav{padding:0 10px;font-size:11px;}
+
+    .content, .content-wide{padding:1rem;}
+    .page-card{padding:1.25rem;border-radius:12px;}
+
+    /* Tabs deslizables horizontalmente */
+    .tabs-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap;}
+    .tabs-bar::-webkit-scrollbar{display:none;}
+    .tab-btn{white-space:nowrap;flex-shrink:0;font-size:13px;padding:0 12px;}
+
+    /* Encabezados de sección apilados */
+    .section-header{flex-direction:column;align-items:stretch;}
+    .header-right{width:100%;justify-content:space-between;}
+    .date-nav{justify-content:center;}
+
+    /* Stats en 2 columnas */
+    .stats-row{grid-template-columns:repeat(2,1fr)!important;}
+    .admin-stats{grid-template-columns:repeat(2,1fr)!important;}
+    #kpi-cards{grid-template-columns:repeat(2,1fr)!important;}
+
+    /* AGENDA: convertir filas grid en tarjetas apiladas */
+    .agenda-head{display:none!important;}
+    .appt-row{grid-template-columns:1fr!important;gap:6px!important;padding:14px!important;border-bottom:8px solid var(--bg-secondary)!important;}
+    .appt-row > div{width:100%;}
+    /* Mostrar etiqueta del dato en móvil */
+    .resp-row > div[data-label]::before{content:attr(data-label);display:block;font-size:10px;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;}
+    .appt-time{font-size:15px!important;font-weight:700!important;color:var(--green)!important;}
+    .appt-status{align-items:flex-start!important;}
+    .appt-status .actions{width:100%;display:flex;gap:6px;flex-wrap:wrap;}
+    .appt-status .actions .btn-action{flex:1;justify-content:center;}
+
+    /* Botones de acción más grandes para tocar */
+    .btn-action{padding:8px 12px!important;font-size:12px!important;min-height:36px;}
+    .slots-grid{grid-template-columns:repeat(3,1fr)!important;}
+
+    /* Login tabs: 2 filas de scroll */
+    .role-tabs-3{grid-template-columns:repeat(3,1fr);}
+    .role-tab{font-size:11px;padding:8px 4px;flex-direction:column;gap:3px;}
+    .role-tab i{font-size:16px;}
+
+    /* Modal casi pantalla completa */
+    .modal{max-width:100%!important;margin:0 8px;padding:1.25rem;}
+    .role-tabs-mu{grid-template-columns:repeat(3,1fr);}
+    .role-tab-mu{font-size:11px;padding:8px 4px;}
+
+    /* Formularios en 1 columna */
+    .form-grid{grid-template-columns:1fr!important;}
+
+    /* Tablas con scroll horizontal */
+    .users-table{font-size:12px;min-width:520px;}
+  }
+
+  /* ── MÓVIL (≤ 480px) ── */
+  @media (max-width:480px){
+    .nav-logo i{font-size:20px;}
+    .content, .content-wide{padding:0.75rem;}
+    .page-card{padding:1rem;}
+    .page-title{font-size:16px;}
+
+    /* Stats 1 columna */
+    .stats-row{grid-template-columns:1fr!important;}
+    .admin-stats{grid-template-columns:1fr!important;}
+    #kpi-cards{grid-template-columns:1fr!important;}
+
+    .slots-grid{grid-template-columns:repeat(2,1fr)!important;}
+
+    /* Login tabs scroll horizontal */
+    .role-tabs-3{display:flex;overflow-x:auto;scrollbar-width:none;}
+    .role-tabs-3::-webkit-scrollbar{display:none;}
+    .role-tab{flex:0 0 auto;min-width:80px;}
+
+    .btn-primary{font-size:14px;padding:12px;}
+    .auth-card{padding:1.5rem;}
+    h1, .auth-title{font-size:20px;}
+
+    /* Botones header apilados */
+    .header-right{flex-direction:column;align-items:stretch;gap:8px;}
+    .header-right .btn-excel, .header-right .btn-add{width:100%;justify-content:center;}
+    .date-nav{width:100%;}
+    .date-nav .date-label{flex:1;text-align:center;}
+  }
+
+  /* Mejoras táctiles generales */
+  @media (hover:none){
+    button, .tab-btn, .slot, .role-tab, .btn-action{-webkit-tap-highlight-color:transparent;}
+    input, select, textarea{font-size:16px!important;} /* evita zoom en iOS */
+  }
+
 </style>
 </head>
 <body>
@@ -1205,7 +1317,7 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
     else if(a.status==='cancelled'){st=`<div class="appt-status"><span class="badge badge-cancelled"><i class="ti ti-ban" style="font-size:11px;"></i> Cancelada</span>${a.motivoCancelacion?`<div class="doctor-note" style="border-left-color:#A32D2D;"><i class="ti ti-message-2 style="font-size:11px;margin-right:3px;vertical-align:-1px;"></i><strong>Motivo:</strong> ${a.motivoCancelacion}${a.cancelledByName?`<br><span style="color:var(--text-tertiary);">Cancelada por ${a.cancelledByName}</span>`:''}</div>`:''}</div>`;}
     else{const badge=isNext?`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`:`<span class="badge badge-pending">Pendiente</span>`;st=`<div class="appt-status">${badge}<div class="actions"><button class="btn-action done" onclick="openAtentionModal('${a.id}')">✓ Atendido</button><button class="btn-action absent" onclick="setStatus('${a.id}','absent')">✗ Ausente</button><button class="btn-action absent" onclick="cancelarCita('${a.id}')" title="Cancelar cita"><i class="ti ti-ban" style="font-size:11px;"></i></button></div></div>`;}
     const solicitante=a.solicitadoPor?`<span style="font-size:12px;${a.solicitadoRol==='encargado'?'color:var(--teal);font-weight:600;':'color:var(--text-secondary);'}">${a.solicitadoRol==='encargado'?'<i class="ti ti-user-cog" style="font-size:12px;vertical-align:-1px;"></i> ':''}${a.solicitadoPor}</span>`:'<span style="font-size:12px;color:var(--text-tertiary);">—</span>';
-    html+=`<div class="appt-row" style="grid-template-columns:110px 65px 170px 1fr 130px 190px;${a.status==='cancelled'?'opacity:0.6;':''}"><div style="font-size:13px;font-weight:600;padding-top:2px;">${formatDate(a.date)}</div><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div><div style="padding-top:2px;">${solicitante}</div>${st}</div>`;
+    html+=`<div class="appt-row resp-row" style="grid-template-columns:110px 65px 170px 1fr 130px 190px;${a.status==='cancelled'?'opacity:0.6;':''}"><div data-label="Fecha" style="font-size:13px;font-weight:600;padding-top:2px;">${formatDate(a.date)}</div><div class="appt-time" data-label="Hora">${to12h(a.time)}</div><div data-label="Paciente"><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason" data-label="Motivo">${a.reason}</div><div data-label="Solicitado por" style="padding-top:2px;">${solicitante}</div>${st}</div>`;
   });
   container.innerHTML=html;
 }
@@ -1460,9 +1572,7 @@ function encBookAppointment(){
   const reason=document.getElementById('enc-f-reason').value;
   const notes=document.getElementById('enc-f-notes').value.trim();
   if(!name||!reason){alert('Complete al menos el nombre y el motivo.');return;}
-  const guardar=document.getElementById('enc-guardar-contacto')?.checked;
-  const guardarPromise=guardar?guardarContacto(name,cedula,dept,phone):Promise.resolve();
-  guardarPromise.then(()=>saveAppt_fb({name,dept:dept||'',reason,notes,date:'',time:'',status:'solicitud',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:'encargado',fechaSolicitud:new Date().toISOString()})).then(()=>{
+  saveAppt_fb({name,dept:dept||'',reason,notes,date:'',time:'',status:'solicitud',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:'encargado',fechaSolicitud:new Date().toISOString()}).then(()=>{
     const toast=document.getElementById('enc-toast');
     document.getElementById('enc-toast-msg').textContent='Solicitud enviada. El médico asignará fecha y hora.';
     toast.style.display='flex';setTimeout(()=>toast.style.display='none',5000);
@@ -1946,7 +2056,6 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('cl
         <select class="form-input" id="enc-f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select>
       </div>
       <div class="form-row"><label class="form-label">Notas adicionales (opcional)</label><textarea class="form-input" id="enc-f-notes" placeholder="Describa brevemente..."></textarea></div>
-      <label class="tipo-check" style="margin-top:1rem;margin-bottom:0;"><input type="checkbox" id="enc-guardar-contacto" checked> <span>Guardar este colaborador en la lista para futuras solicitudes</span></label>
       <button class="btn-primary" onclick="encBookAppointment()" style="margin-top:1.25rem;"><i class="ti ti-send"></i> Enviar solicitud</button>
     </div>
 
