@@ -321,10 +321,28 @@ const db = firebase.database();
       <p id="nc-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p>
       <input class="form-input" type="time" id="nc-time-input" style="height:40px;">
     </div>
-    <div class="error-msg" id="nc-error"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="nc-error-txt"></span></div>
+    <label class="tipo-check" style="margin-bottom:0;"><input type="checkbox" id="nc-guardar-contacto" checked> <span>Guardar este colaborador en la lista para futuras citas</span></label>
+    <div class="error-msg" id="nc-error" style="margin-top:1rem;"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="nc-error-txt"></span></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('modal-nueva-cita')">Cancelar</button>
       <button class="btn-confirm" onclick="confirmNuevaCita()"><i class="ti ti-calendar-check"></i> Agendar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL Cancelar cita -->
+<div class="modal-overlay" id="modal-cancelar">
+  <div class="modal">
+    <p class="modal-title">Cancelar cita</p>
+    <p class="modal-sub">Indique el motivo de la cancelación</p>
+    <div class="modal-patient"><strong id="cancel-patient-name"></strong><span id="cancel-patient-detail"></span></div>
+    <label class="form-label" style="margin-bottom:6px;">Motivo de cancelación</label>
+    <textarea class="modal-textarea" id="cancel-motivo" placeholder="Ej. El colaborador no podrá asistir, se reagenda para otra fecha..."></textarea>
+    <div class="error-msg" id="cancel-error"><i class="ti ti-alert-circle" style="font-size:13px;"></i><span id="cancel-error-txt"></span></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-cancelar')">Volver</button>
+      <button class="btn-confirm" style="background:#A32D2D;" onclick="confirmCancelar()"><i class="ti ti-ban"></i> Confirmar cancelación</button>
     </div>
   </div>
 </div>
@@ -554,6 +572,7 @@ const db = firebase.database();
       <button class="tab-btn" id="atab-cita" onclick="switchAdminTab('cita')"><i class="ti ti-calendar-plus"></i> Nueva cita</button>
       <button class="tab-btn" id="atab-kpis" onclick="switchAdminTab('kpis')"><i class="ti ti-chart-bar"></i> Dashboard KPI</button>
       <button class="tab-btn" id="atab-usuarios" onclick="switchAdminTab('usuarios')"><i class="ti ti-users"></i> Usuarios</button>
+      <button class="tab-btn" id="atab-colaboradores" onclick="switchAdminTab('colaboradores')"><i class="ti ti-address-book"></i> Colaboradores</button>
     </div>
     <div class="tab-panel active" id="apanel-resumen">
       <div class="admin-stats" id="adm-stats-cards"></div>
@@ -601,6 +620,7 @@ const db = firebase.database();
         <div class="form-row"><label class="form-label">Notas (opcional)</label><textarea class="form-input" id="adm-f-notes" placeholder="Describa brevemente..."></textarea></div>
         <div class="form-row"><label class="form-label">Fecha</label><input class="form-input" type="date" id="adm-f-date"></div>
         <div class="form-row"><label class="form-label">Hora de la cita</label><p id="adm-slots-turno-label" style="font-size:12px;color:var(--green-dark);font-weight:500;margin:4px 0 6px;"></p><input class="form-input" type="time" id="adm-f-time-input" style="height:40px;"></div>
+        <label class="tipo-check" style="margin-top:1rem;margin-bottom:0;"><input type="checkbox" id="adm-guardar-contacto" checked> <span>Guardar este colaborador en la lista para futuras citas</span></label>
         <button class="btn-primary" onclick="admBookAppointment()" style="margin-top:1.25rem;"><i class="ti ti-calendar-check"></i> Confirmar cita</button>
       </div>
     </div>
@@ -608,6 +628,24 @@ const db = firebase.database();
       <div class="page-card">
         <div class="table-header"><p class="table-title"><i class="ti ti-users" style="font-size:18px;color:var(--green);"></i> Usuarios del sistema</p><button class="btn-add" onclick="openUserModal('create')"><i class="ti ti-user-plus"></i> Nuevo usuario</button></div>
         <div style="overflow-x:auto;"><table class="users-table"><thead><tr><th>#</th><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Info</th><th>Acciones</th></tr></thead><tbody id="users-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- COLABORADORES (contactos sin login) -->
+    <div class="tab-panel" id="apanel-colaboradores">
+      <div class="page-card">
+        <div class="table-header">
+          <p class="table-title"><i class="ti ti-address-book" style="font-size:18px;color:var(--teal);"></i> Colaboradores guardados</p>
+          <button class="btn-del" id="col-del-btn" onclick="eliminarColaboradoresSeleccionados()" style="display:none;"><i class="ti ti-trash"></i> Eliminar seleccionados (<span id="col-sel-count">0</span>)</button>
+        </div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">Lista de colaboradores agregados manualmente en las citas (no tienen acceso al sistema). Puede seleccionar y eliminar los que ya no necesite.</p>
+        <div class="form-row" style="margin-bottom:1rem;">
+          <div style="position:relative;max-width:400px;">
+            <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);font-size:16px;"></i>
+            <input class="form-input" id="col-search" placeholder="Buscar por nombre o cédula..." style="padding-left:38px;" oninput="renderColaboradores()">
+          </div>
+        </div>
+        <div style="overflow-x:auto;"><table class="users-table"><thead><tr><th style="width:40px;"><input type="checkbox" id="col-check-all" onchange="toggleAllColaboradores()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--teal);"></th><th>Nombre</th><th>Cédula</th><th>Departamento</th><th>Teléfono</th><th>Acción</th></tr></thead><tbody id="col-tbody"></tbody></table></div>
       </div>
     </div>
 
@@ -712,10 +750,35 @@ let selectedSlot=null, admSelectedSlot=null;
 let docDay=0, admDay=0, secDay=0, pendingAtendidoId=null;
 let docVistaTodas=false, admVistaTodas=false;
 let muMode='create', muEditUsername=null, muRole='employee', muOrigRole='employee';
-let usersCache={}, appointmentsCache={};
+let usersCache={}, appointmentsCache={}, contactsCache={};
 
 const usersRef = db.ref('users');
 const apptsRef = db.ref('appointments');
+const contactsRef = db.ref('contacts');
+
+contactsRef.on('value', snap => {
+  contactsCache = snap.val() || {};
+  // Repoblar selectores si están visibles
+  if(document.getElementById('enc-f-emp')&&currentUser&&currentUser.role==='encargado') poblarEncEmpleados();
+  if(document.getElementById('apanel-colaboradores')?.classList.contains('active')) renderColaboradores();
+});
+
+function getContactos(){ return Object.values(contactsCache); }
+// Lista combinada para selectores: empleados registrados + contactos manuales
+function getPacientesLista(){
+  const emps=getUsers().filter(u=>u.role==='employee').map(u=>({key:'user:'+u.username,name:u.name,cedula:u.cedula||'',dept:u.dept||'',phone:u.phone||'',tipo:'registrado'}));
+  const conts=getContactos().map(c=>({key:'contact:'+c.id,name:c.name,cedula:c.cedula||'',dept:c.dept||'',phone:c.phone||'',tipo:'contacto'}));
+  return [...emps,...conts].sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function guardarContacto(name,cedula,dept,phone){
+  // Evitar duplicados por cédula o nombre
+  const existe=getContactos().some(c=>(cedula&&c.cedula===cedula)||(c.name.toLowerCase()===name.toLowerCase()));
+  const yaEsUsuario=getUsers().some(u=>u.role==='employee'&&((cedula&&u.cedula===cedula)||u.name.toLowerCase()===name.toLowerCase()));
+  if(existe||yaEsUsuario)return Promise.resolve();
+  const id='c'+Date.now()+Math.floor(Math.random()*1000);
+  return contactsRef.child(id).set({id,name,cedula:cedula||'',dept:dept||'',phone:phone||'',creado:new Date().toISOString()});
+}
 
 let sessionRestored=false;
 usersRef.on('value', snap => {
@@ -933,7 +996,7 @@ function renderEmpCitas(){
     else if(a.status==='absent'){estado='Ausente';color='background:#FCEBEB;color:#A32D2D;';}
     else if(a.status==='cancelled'){estado='Cancelada';color='background:#EDEDED;color:#666;';}
     const fechaHora=a.date?`${formatDate(a.date)} a las ${to12h(a.time)}`:'<em style="color:var(--text-tertiary);">Pendiente de asignar</em>';
-    // El empleado puede cancelar solicitudes y citas pendientes (no atendidas/ausentes/canceladas)
+    const motivoCancel=(a.status==='cancelled'&&a.motivoCancelacion)?`<p style="font-size:11px;color:#A32D2D;margin-top:4px;background:#FCEBEB;padding:5px 8px;border-radius:6px;"><i class="ti ti-ban" style="font-size:11px;vertical-align:-1px;"></i> <strong>Cancelada:</strong> ${a.motivoCancelacion}</p>`:'';
     const puedeCancelar=(a.status==='solicitud'||a.status==='pending'||a.status==='next');
     html+=`<div style="border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px;background:var(--bg-primary);${a.status==='cancelled'?'opacity:0.65;':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
@@ -941,6 +1004,7 @@ function renderEmpCitas(){
           <p style="font-size:14px;font-weight:600;">${a.reason}</p>
           <p style="font-size:13px;color:var(--text-secondary);margin-top:3px;"><i class="ti ti-calendar" style="font-size:13px;vertical-align:-1px;"></i> ${fechaHora}</p>
           ${a.notes?`<p style="font-size:12px;color:var(--text-tertiary);margin-top:3px;">${a.notes}</p>`:''}
+          ${motivoCancel}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
           <span style="font-size:11px;font-weight:600;padding:5px 11px;border-radius:99px;white-space:nowrap;${color}">${estado}</span>
@@ -1024,8 +1088,8 @@ function renderSolicitudes(){
 
 // ADMIN
 function switchAdminTab(t){
-  ['resumen','agenda','cita','usuarios','kpis'].forEach(x=>{const tb=document.getElementById('atab-'+x);const pn=document.getElementById('apanel-'+x);if(tb)tb.classList.toggle('active',x===t);if(pn)pn.classList.toggle('active',x===t);});
-  if(t==='resumen')renderAdminResumen();if(t==='agenda')renderAdmAgenda();if(t==='cita')renderAdmCitaForm();if(t==='usuarios')renderUsersTable();if(t==='kpis')renderKPIs();
+  ['resumen','agenda','cita','usuarios','kpis','colaboradores'].forEach(x=>{const tb=document.getElementById('atab-'+x);const pn=document.getElementById('apanel-'+x);if(tb)tb.classList.toggle('active',x===t);if(pn)pn.classList.toggle('active',x===t);});
+  if(t==='resumen')renderAdminResumen();if(t==='agenda')renderAdmAgenda();if(t==='cita')renderAdmCitaForm();if(t==='usuarios')renderUsersTable();if(t==='kpis')renderKPIs();if(t==='colaboradores')renderColaboradores();
 }
 function renderAdminResumen(){
   const users=getUsers();
@@ -1082,18 +1146,20 @@ function renderAdmAgenda(){
   renderAgendaInto('adm-agenda-container',appts,admVistaTodas?null:admDay);
 }
 function renderAdmCitaForm(){
-  const emps=getUsers().filter(u=>u.role==='employee');
-  document.getElementById('adm-f-emp').innerHTML='<option value="">Seleccionar empleado...</option>'+emps.map(u=>`<option value="${u.username}">${u.name} (${u.dept||'—'})</option>`).join('');
+  const lista=getPacientesLista();
+  document.getElementById('adm-f-emp').innerHTML='<option value="">Seleccionar colaborador...</option>'+lista.map(p=>`<option value="${p.key}">${p.name} (${p.dept||'—'})${p.tipo==='contacto'?' • contacto':''}</option>`).join('');
   ['adm-f-name','adm-f-id','adm-f-phone'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('adm-f-dept').value='';
   document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
   document.getElementById('adm-f-time-input').value='';
+  const g=document.getElementById('adm-guardar-contacto');if(g)g.checked=true;
   const t=todayStr();const el=document.getElementById('adm-f-date');el.min=t;el.value=t;el.onchange=updateAdmTurno;updateAdmTurno();
 }
 function fillAdmEmpData(){
-  const u=usersCache[document.getElementById('adm-f-emp').value];
-  document.getElementById('adm-f-name').value=u?u.name:'';document.getElementById('adm-f-id').value=u?u.cedula||'':'';
-  document.getElementById('adm-f-dept').value=u?u.dept||'':'';document.getElementById('adm-f-phone').value=u?u.phone||'':'';
+  const key=document.getElementById('adm-f-emp').value;
+  const p=getPacientesLista().find(x=>x.key===key);
+  document.getElementById('adm-f-name').value=p?p.name:'';document.getElementById('adm-f-id').value=p?p.cedula||'':'';
+  document.getElementById('adm-f-dept').value=p?p.dept||'':'';document.getElementById('adm-f-phone').value=p?p.phone||'':'';
 }
 function updateAdmTurno(){
   const date=document.getElementById('adm-f-date').value;
@@ -1112,7 +1178,9 @@ function admBookAppointment(){
   const date=document.getElementById('adm-f-date').value;
   const time=document.getElementById('adm-f-time-input').value;
   if(!name||!reason||!date||!time){alert('Complete al menos el nombre, motivo, fecha y hora.');return;}
-  saveAppt_fb({name,dept:dept||'',reason,notes,date,time,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:currentUser.role,fechaSolicitud:new Date().toISOString(),fechaAsignacion:new Date().toISOString(),asignadoPor:currentUser.name}).then(()=>{
+  const guardar=document.getElementById('adm-guardar-contacto')?.checked;
+  const guardarPromise=guardar?guardarContacto(name,cedula,dept,phone):Promise.resolve();
+  guardarPromise.then(()=>saveAppt_fb({name,dept:dept||'',reason,notes,date,time,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:currentUser.role,fechaSolicitud:new Date().toISOString(),fechaAsignacion:new Date().toISOString(),asignadoPor:currentUser.name})).then(()=>{
     alert(`Cita agendada para ${name} el ${formatDate(date)} a las ${to12h(time)}.`);
     document.getElementById('adm-f-emp').value='';document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
     ['adm-f-name','adm-f-id','adm-f-phone','adm-f-time-input'].forEach(id=>document.getElementById(id).value='');
@@ -1134,7 +1202,7 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
     let st='';
     if(a.status==='done'){st=`<div class="appt-status"><span class="badge badge-done"><i class="ti ti-check" style="font-size:11px;"></i> Atendido</span>${a.tipoAtencion?`<span style="font-size:11px;font-weight:600;color:var(--blue);background:var(--blue-light);padding:2px 7px;border-radius:99px;">${a.tipoAtencion}</span>`:''} ${a.doctorNote?`<div class="doctor-note"><i class="ti ti-notes" style="font-size:11px;margin-right:3px;vertical-align:-1px;"></i>${a.doctorNote}</div>`:`<span style="font-size:11px;color:var(--text-tertiary);">Sin descripción</span>`}<button class="btn-action done" onclick="openAtentionModal('${a.id}')"><i class="ti ti-edit" style="font-size:11px;"></i> Editar</button></div>`;}
     else if(a.status==='absent'){st=`<div class="appt-status"><span class="badge badge-absent"><i class="ti ti-x" style="font-size:11px;"></i> Ausente</span></div>`;}
-    else if(a.status==='cancelled'){st=`<div class="appt-status"><span class="badge badge-cancelled"><i class="ti ti-ban" style="font-size:11px;"></i> Cancelada</span></div>`;}
+    else if(a.status==='cancelled'){st=`<div class="appt-status"><span class="badge badge-cancelled"><i class="ti ti-ban" style="font-size:11px;"></i> Cancelada</span>${a.motivoCancelacion?`<div class="doctor-note" style="border-left-color:#A32D2D;"><i class="ti ti-message-2 style="font-size:11px;margin-right:3px;vertical-align:-1px;"></i><strong>Motivo:</strong> ${a.motivoCancelacion}${a.cancelledByName?`<br><span style="color:var(--text-tertiary);">Cancelada por ${a.cancelledByName}</span>`:''}</div>`:''}</div>`;}
     else{const badge=isNext?`<span class="badge badge-next"><i class="ti ti-clock" style="font-size:11px;"></i> Siguiente</span>`:`<span class="badge badge-pending">Pendiente</span>`;st=`<div class="appt-status">${badge}<div class="actions"><button class="btn-action done" onclick="openAtentionModal('${a.id}')">✓ Atendido</button><button class="btn-action absent" onclick="setStatus('${a.id}','absent')">✗ Ausente</button><button class="btn-action absent" onclick="cancelarCita('${a.id}')" title="Cancelar cita"><i class="ti ti-ban" style="font-size:11px;"></i></button></div></div>`;}
     const solicitante=a.solicitadoPor?`<span style="font-size:12px;${a.solicitadoRol==='encargado'?'color:var(--teal);font-weight:600;':'color:var(--text-secondary);'}">${a.solicitadoRol==='encargado'?'<i class="ti ti-user-cog" style="font-size:12px;vertical-align:-1px;"></i> ':''}${a.solicitadoPor}</span>`:'<span style="font-size:12px;color:var(--text-tertiary);">—</span>';
     html+=`<div class="appt-row" style="grid-template-columns:110px 65px 170px 1fr 130px 190px;${a.status==='cancelled'?'opacity:0.6;':''}"><div style="font-size:13px;font-weight:600;padding-top:2px;">${formatDate(a.date)}</div><div class="appt-time">${to12h(a.time)}</div><div><p class="appt-name">${a.name}</p><p class="appt-dept">${a.dept}${a.cedula?' · '+a.cedula:''}</p>${a.notes?`<p class="appt-notes">${a.notes}</p>`:''}</div><div class="appt-reason">${a.reason}</div><div style="padding-top:2px;">${solicitante}</div>${st}</div>`;
@@ -1143,11 +1211,27 @@ function renderAgendaInto(containerId,dayAppts,dayOffset){
 }
 function setStatus(id,status){updateAppt_fb(id,{status});}
 
+let pendingCancelId=null;
 function cancelarCita(id){
   const a=appointmentsCache[id];if(!a)return;
-  const cuando=a.date?`del ${formatDate(a.date)} a las ${to12h(a.time)}`:'(solicitud sin asignar)';
-  if(!confirm(`¿Cancelar la cita de ${a.name} ${cuando}?\n\nQuedará registrada en el historial como cancelada.`))return;
-  updateAppt_fb(id,{status:'cancelled',cancelledAt:new Date().toISOString(),cancelledBy:currentUser.role});
+  pendingCancelId=id;
+  const cuando=a.date?`${formatDate(a.date)} a las ${to12h(a.time)}`:'(solicitud sin asignar)';
+  document.getElementById('cancel-patient-name').textContent=a.name;
+  document.getElementById('cancel-patient-detail').textContent=`${a.reason} · ${cuando}`;
+  document.getElementById('cancel-motivo').value='';
+  document.getElementById('cancel-error').classList.remove('show');
+  document.getElementById('modal-cancelar').classList.add('open');
+  setTimeout(()=>document.getElementById('cancel-motivo').focus(),100);
+}
+
+function confirmCancelar(){
+  const motivo=document.getElementById('cancel-motivo').value.trim();
+  const errEl=document.getElementById('cancel-error'),errTxt=document.getElementById('cancel-error-txt');
+  errEl.classList.remove('show');
+  if(!motivo){errTxt.textContent='Debe indicar el motivo de la cancelación.';errEl.classList.add('show');return;}
+  updateAppt_fb(pendingCancelId,{status:'cancelled',cancelledAt:new Date().toISOString(),cancelledBy:currentUser.role,cancelledByName:currentUser.name,motivoCancelacion:motivo}).then(()=>{
+    closeModal('modal-cancelar');
+  });
 }
 function openAtentionModal(id){
   const a=appointmentsCache[id];if(!a)return;
@@ -1318,8 +1402,8 @@ let ncSelectedSlot=null;
 
 function openNuevaCitaModal(){
   document.getElementById('nc-error').classList.remove('show');
-  const emps=getUsers().filter(u=>u.role==='employee');
-  document.getElementById('nc-emp').innerHTML='<option value="">Seleccionar registrado...</option>'+emps.map(u=>`<option value="${u.username}">${u.name} (${u.dept||'—'})</option>`).join('');
+  const lista=getPacientesLista();
+  document.getElementById('nc-emp').innerHTML='<option value="">Seleccionar colaborador...</option>'+lista.map(p=>`<option value="${p.key}">${p.name} (${p.dept||'—'})${p.tipo==='contacto'?' • contacto':''}</option>`).join('');
   ['nc-name','nc-id','nc-phone','nc-notes','nc-time-input'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nc-dept').value='';document.getElementById('nc-reason').value='';document.getElementById('nc-emp').value='';
   const t=todayStr();const el=document.getElementById('nc-date');el.min=t;el.value=t;el.onchange=updateNcTurno;
@@ -1328,12 +1412,13 @@ function openNuevaCitaModal(){
 }
 
 function fillNcEmpData(){
-  const u=usersCache[document.getElementById('nc-emp').value];
-  if(u){
-    document.getElementById('nc-name').value=u.name||'';
-    document.getElementById('nc-id').value=u.cedula||'';
-    document.getElementById('nc-dept').value=u.dept||'';
-    document.getElementById('nc-phone').value=u.phone||'';
+  const key=document.getElementById('nc-emp').value;
+  const p=getPacientesLista().find(x=>x.key===key);
+  if(p){
+    document.getElementById('nc-name').value=p.name||'';
+    document.getElementById('nc-id').value=p.cedula||'';
+    document.getElementById('nc-dept').value=p.dept||'';
+    document.getElementById('nc-phone').value=p.phone||'';
   }
 }
 
@@ -1355,7 +1440,9 @@ function confirmNuevaCita(){
   const errEl=document.getElementById('nc-error'),errTxt=document.getElementById('nc-error-txt');
   errEl.classList.remove('show');
   if(!name||!reason||!date||!time){errTxt.textContent='Complete nombre, motivo, fecha y hora.';errEl.classList.add('show');return;}
-  saveAppt_fb({name,dept:dept||'',reason,notes,date,time,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:currentUser.role,fechaSolicitud:new Date().toISOString(),fechaAsignacion:new Date().toISOString(),asignadoPor:currentUser.name}).then(()=>{
+  const guardar=document.getElementById('nc-guardar-contacto')?.checked;
+  const guardarPromise=guardar?guardarContacto(name,cedula,dept,phone):Promise.resolve();
+  guardarPromise.then(()=>saveAppt_fb({name,dept:dept||'',reason,notes,date,time,status:'pending',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:currentUser.role,fechaSolicitud:new Date().toISOString(),fechaAsignacion:new Date().toISOString(),asignadoPor:currentUser.name})).then(()=>{
     closeModal('modal-nueva-cita');
     if(currentUser.role==='doctor'){
       const today=todayStr();
@@ -1373,17 +1460,38 @@ function encBookAppointment(){
   const reason=document.getElementById('enc-f-reason').value;
   const notes=document.getElementById('enc-f-notes').value.trim();
   if(!name||!reason){alert('Complete al menos el nombre y el motivo.');return;}
-  saveAppt_fb({name,dept:dept||'',reason,notes,date:'',time:'',status:'solicitud',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:'encargado',fechaSolicitud:new Date().toISOString()}).then(()=>{
+  const guardar=document.getElementById('enc-guardar-contacto')?.checked;
+  const guardarPromise=guardar?guardarContacto(name,cedula,dept,phone):Promise.resolve();
+  guardarPromise.then(()=>saveAppt_fb({name,dept:dept||'',reason,notes,date:'',time:'',status:'solicitud',cedula:cedula||'',phone:phone||'',doctorNote:'',tipoAtencion:'',solicitadoPor:currentUser.name,solicitadoRol:'encargado',fechaSolicitud:new Date().toISOString()})).then(()=>{
     const toast=document.getElementById('enc-toast');
     document.getElementById('enc-toast-msg').textContent='Solicitud enviada. El médico asignará fecha y hora.';
     toast.style.display='flex';setTimeout(()=>toast.style.display='none',5000);
     ['enc-f-name','enc-f-id','enc-f-phone','enc-f-notes'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('enc-f-dept').value='';document.getElementById('enc-f-reason').value='';
+    document.getElementById('enc-f-dept').value='';document.getElementById('enc-f-reason').value='';document.getElementById('enc-f-emp').value='';
     renderEncCitas();
   });
 }
 
+function fillEncEmpData(){
+  const key=document.getElementById('enc-f-emp').value;
+  const p=getPacientesLista().find(x=>x.key===key);
+  if(p){
+    document.getElementById('enc-f-name').value=p.name||'';
+    document.getElementById('enc-f-id').value=p.cedula||'';
+    document.getElementById('enc-f-dept').value=p.dept||'';
+    document.getElementById('enc-f-phone').value=p.phone||'';
+  }
+}
+
+function poblarEncEmpleados(){
+  const sel=document.getElementById('enc-f-emp');
+  if(!sel)return;
+  const lista=getPacientesLista();
+  sel.innerHTML='<option value="">Seleccionar colaborador...</option>'+lista.map(p=>`<option value="${p.key}">${p.name} (${p.dept||'—'})${p.tipo==='contacto'?' • contacto':''}</option>`).join('');
+}
+
 function renderEncCitas(){
+  poblarEncEmpleados();
   const container=document.getElementById('enc-mis-citas');
   if(!container)return;
   const q=(document.getElementById('enc-search')?.value||'').toLowerCase().trim();
@@ -1404,6 +1512,7 @@ function renderEncCitas(){
     else if(a.status==='absent'){estado='Ausente';color='background:#FCEBEB;color:#A32D2D;';}
     else if(a.status==='cancelled'){estado='Cancelada';color='background:#EDEDED;color:#666;';}
     const fechaHora=a.date?`${formatDate(a.date)} a las ${to12h(a.time)}`:'<em style="color:var(--text-tertiary);">Pendiente de asignar</em>';
+    const motivoCancelEnc=(a.status==='cancelled'&&a.motivoCancelacion)?`<p style="font-size:11px;color:#A32D2D;margin-top:4px;background:#FCEBEB;padding:5px 8px;border-radius:6px;"><i class="ti ti-ban" style="font-size:11px;vertical-align:-1px;"></i> <strong>Cancelada:</strong> ${a.motivoCancelacion}</p>`:'';
     const puedeCancelar=(a.status==='solicitud'||a.status==='pending'||a.status==='next');
     html+=`<div style="border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px;background:var(--bg-primary);${a.status==='cancelled'?'opacity:0.65;':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
@@ -1411,6 +1520,7 @@ function renderEncCitas(){
           <p style="font-size:14px;font-weight:600;">${a.name} <span style="font-size:12px;color:var(--text-tertiary);font-weight:400;">${a.cedula?'· '+a.cedula:''}</span></p>
           <p style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${a.reason} · ${a.dept||'—'}</p>
           <p style="font-size:13px;color:var(--text-secondary);margin-top:3px;"><i class="ti ti-calendar" style="font-size:13px;vertical-align:-1px;"></i> ${fechaHora}</p>
+          ${motivoCancelEnc}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
           <span style="font-size:11px;font-weight:600;padding:5px 11px;border-radius:99px;white-space:nowrap;${color}">${estado}</span>
@@ -1503,6 +1613,75 @@ function getKpiData(){
   if(desde)appts=appts.filter(a=>a.date>=desde);
   if(hasta)appts=appts.filter(a=>a.date<=hasta);
   return appts;
+}
+
+let colSeleccionados=new Set();
+
+function renderColaboradores(){
+  const tbody=document.getElementById('col-tbody');
+  if(!tbody)return;
+  const q=(document.getElementById('col-search')?.value||'').toLowerCase().trim();
+  let contactos=getContactos();
+  if(q){ contactos=contactos.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.cedula||'').toLowerCase().includes(q)); }
+  contactos.sort((a,b)=>a.name.localeCompare(b.name));
+  if(!contactos.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-tertiary);"><i class="ti ti-address-book" style="font-size:24px;display:block;margin-bottom:8px;"></i>${q?'Sin resultados':'No hay colaboradores guardados'}</td></tr>`;
+    actualizarColSelUI();
+    return;
+  }
+  tbody.innerHTML=contactos.map(c=>`<tr>
+    <td><input type="checkbox" class="col-check" value="${c.id}" ${colSeleccionados.has(c.id)?'checked':''} onchange="toggleColaborador('${c.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--teal);"></td>
+    <td style="font-weight:500;">${c.name}</td>
+    <td style="font-size:13px;color:var(--text-secondary);">${c.cedula||'—'}</td>
+    <td style="font-size:13px;color:var(--text-secondary);">${c.dept||'—'}</td>
+    <td style="font-size:13px;color:var(--text-secondary);">${c.phone||'—'}</td>
+    <td><button class="btn-del" onclick="eliminarUnColaborador('${c.id}','${(c.name||'').replace(/'/g,"")}')"><i class="ti ti-trash" style="font-size:12px;"></i> Eliminar</button></td>
+  </tr>`).join('');
+  actualizarColSelUI();
+}
+
+function toggleColaborador(id){
+  if(colSeleccionados.has(id))colSeleccionados.delete(id);
+  else colSeleccionados.add(id);
+  actualizarColSelUI();
+}
+
+function toggleAllColaboradores(){
+  const all=document.getElementById('col-check-all').checked;
+  document.querySelectorAll('.col-check').forEach(cb=>{
+    cb.checked=all;
+    if(all)colSeleccionados.add(cb.value);
+    else colSeleccionados.delete(cb.value);
+  });
+  actualizarColSelUI();
+}
+
+function actualizarColSelUI(){
+  const n=colSeleccionados.size;
+  const btn=document.getElementById('col-del-btn');
+  const count=document.getElementById('col-sel-count');
+  if(count)count.textContent=n;
+  if(btn)btn.style.display=n>0?'inline-flex':'none';
+}
+
+function eliminarUnColaborador(id,nombre){
+  if(!confirm(`¿Eliminar a "${nombre}" de la lista de colaboradores?\n\nEsta acción no se puede deshacer. Las citas ya registradas no se verán afectadas.`))return;
+  contactsRef.child(id).remove().then(()=>{
+    colSeleccionados.delete(id);
+    renderColaboradores();
+  });
+}
+
+function eliminarColaboradoresSeleccionados(){
+  const n=colSeleccionados.size;
+  if(n===0)return;
+  if(!confirm(`¿Eliminar ${n} colaborador${n>1?'es':''} seleccionado${n>1?'s':''} de la lista?\n\nEsta acción no se puede deshacer. Las citas ya registradas no se verán afectadas.`))return;
+  const promesas=Array.from(colSeleccionados).map(id=>contactsRef.child(id).remove());
+  Promise.all(promesas).then(()=>{
+    colSeleccionados.clear();
+    const checkAll=document.getElementById('col-check-all');if(checkAll)checkAll.checked=false;
+    renderColaboradores();
+  });
 }
 
 function renderKPIs(){
@@ -1669,7 +1848,7 @@ function exportExcel(){
       'Descripcion medica':a.doctorNote||''
     }));
     const ws=XLSX.utils.json_to_sheet(data);
-    ws['!cols']=[{wch:12},{wch:10},{wch:22},{wch:16},{wch:14},{wch:16},{wch:24},{wch:24},{wch:12},{wch:24},{wch:20},{wch:18},{wch:18},{wch:35}];
+    ws['!cols']=[{wch:12},{wch:10},{wch:22},{wch:16},{wch:14},{wch:16},{wch:24},{wch:24},{wch:12},{wch:24},{wch:20},{wch:18},{wch:18},{wch:28},{wch:35}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,'Citas',ws);
     const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
@@ -1749,6 +1928,10 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('cl
     <div class="page-card">
       <p class="page-title">Solicitar cita para un colaborador</p>
       <p class="page-sub">Genere la solicitud. El médico asignará fecha y hora.</p>
+      <div class="form-row"><label class="form-label">Empleado registrado (opcional)</label>
+        <select class="form-input" id="enc-f-emp" onchange="fillEncEmpData()"><option value="">Seleccionar registrado...</option></select>
+        <p style="font-size:11px;color:var(--text-tertiary);margin-top:5px;">O escriba los datos manualmente abajo si no está registrado</p>
+      </div>
       <div class="form-grid">
         <div class="form-row"><label class="form-label">Nombre del colaborador</label><input class="form-input" id="enc-f-name" placeholder="Nombre completo"></div>
         <div class="form-row"><label class="form-label">Cédula</label><input class="form-input" id="enc-f-id" placeholder="Cédula"></div>
@@ -1763,6 +1946,7 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('cl
         <select class="form-input" id="enc-f-reason"><option value="">Seleccionar...</option><option>Accidente laboral</option><option>Certificado médico</option><option>Control general / Chequeo</option><option>Otro</option><option>Salud mental / Estrés</option><option>Seguimiento de tratamiento</option></select>
       </div>
       <div class="form-row"><label class="form-label">Notas adicionales (opcional)</label><textarea class="form-input" id="enc-f-notes" placeholder="Describa brevemente..."></textarea></div>
+      <label class="tipo-check" style="margin-top:1rem;margin-bottom:0;"><input type="checkbox" id="enc-guardar-contacto" checked> <span>Guardar este colaborador en la lista para futuras solicitudes</span></label>
       <button class="btn-primary" onclick="encBookAppointment()" style="margin-top:1.25rem;"><i class="ti ti-send"></i> Enviar solicitud</button>
     </div>
 
