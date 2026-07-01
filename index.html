@@ -1346,14 +1346,28 @@ function renderAdmCitaForm(){
   document.getElementById('adm-f-dept').value='';
   document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
   document.getElementById('adm-f-time-input').value='';
+  setCamposBloqueados(['adm-f-name','adm-f-id','adm-f-dept','adm-f-phone'],false);
   const g=document.getElementById('adm-guardar-contacto');if(g)g.checked=true;
   const t=todayStr();const el=document.getElementById('adm-f-date');el.min=t;el.value=t;el.onchange=updateAdmTurno;updateAdmTurno();
 }
+function setCamposBloqueados(ids,bloq){
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(el.tagName==='SELECT'){el.disabled=bloq;}
+    else{el.readOnly=bloq;}
+    el.style.background=bloq?'var(--bg-secondary)':'';
+    el.style.cursor=bloq?'not-allowed':'';
+  });
+}
+
 function fillAdmEmpData(){
   const key=document.getElementById('adm-f-emp').value;
   const p=getPacientesLista().find(x=>x.key===key);
   document.getElementById('adm-f-name').value=p?p.name:'';document.getElementById('adm-f-id').value=p?p.cedula||'':'';
   document.getElementById('adm-f-dept').value=p?p.dept||'':'';document.getElementById('adm-f-phone').value=p?p.phone||'':'';
+  // Bloquear campos si se eligió un colaborador; desbloquear si se deseleccionó
+  setCamposBloqueados(['adm-f-name','adm-f-id','adm-f-dept','adm-f-phone'],!!key);
 }
 function updateAdmTurno(){
   const date=document.getElementById('adm-f-date').value;
@@ -1379,6 +1393,7 @@ function admBookAppointment(){
     document.getElementById('adm-f-emp').value='';document.getElementById('adm-f-reason').value='';document.getElementById('adm-f-notes').value='';
     ['adm-f-name','adm-f-id','adm-f-phone','adm-f-time-input'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('adm-f-dept').value='';
+    setCamposBloqueados(['adm-f-name','adm-f-id','adm-f-dept','adm-f-phone'],false);
     updateAdmTurno();
   });
 }
@@ -1603,6 +1618,7 @@ function openNuevaCitaModal(){
   document.getElementById('nc-emp').innerHTML='<option value="">Seleccionar colaborador...</option>'+lista.map(p=>`<option value="${p.key}">${p.name} (${p.dept||'—'})${p.tipo==='contacto'?' • contacto':''}</option>`).join('');
   ['nc-name','nc-id','nc-phone','nc-notes','nc-time-input'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nc-dept').value='';document.getElementById('nc-reason').value='';document.getElementById('nc-emp').value='';
+  setCamposBloqueados(['nc-name','nc-id','nc-dept','nc-phone'],false);
   const t=todayStr();const el=document.getElementById('nc-date');el.min=t;el.value=t;el.onchange=updateNcTurno;
   updateNcTurno();
   document.getElementById('modal-nueva-cita').classList.add('open');
@@ -1616,7 +1632,13 @@ function fillNcEmpData(){
     document.getElementById('nc-id').value=p.cedula||'';
     document.getElementById('nc-dept').value=p.dept||'';
     document.getElementById('nc-phone').value=p.phone||'';
+  } else {
+    document.getElementById('nc-name').value='';
+    document.getElementById('nc-id').value='';
+    document.getElementById('nc-dept').value='';
+    document.getElementById('nc-phone').value='';
   }
+  setCamposBloqueados(['nc-name','nc-id','nc-dept','nc-phone'],!!key);
 }
 
 function updateNcTurno(){
@@ -1663,6 +1685,7 @@ function encBookAppointment(){
     toast.style.display='flex';setTimeout(()=>toast.style.display='none',5000);
     ['enc-f-name','enc-f-id','enc-f-phone','enc-f-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('enc-f-dept').value='';document.getElementById('enc-f-reason').value='';document.getElementById('enc-f-emp').value='';
+    setCamposBloqueados(['enc-f-name','enc-f-id','enc-f-dept','enc-f-phone'],false);
     renderEncCitas();
   });
 }
@@ -1675,7 +1698,13 @@ function fillEncEmpData(){
     document.getElementById('enc-f-id').value=p.cedula||'';
     document.getElementById('enc-f-dept').value=p.dept||'';
     document.getElementById('enc-f-phone').value=p.phone||'';
+  } else {
+    document.getElementById('enc-f-name').value='';
+    document.getElementById('enc-f-id').value='';
+    document.getElementById('enc-f-dept').value='';
+    document.getElementById('enc-f-phone').value='';
   }
+  setCamposBloqueados(['enc-f-name','enc-f-id','enc-f-dept','enc-f-phone'],!!key);
 }
 
 function poblarEncEmpleados(){
